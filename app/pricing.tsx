@@ -1,0 +1,168 @@
+import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ScreenContainer } from '@/components/ScreenContainer';
+import { GlassCard } from '@/components/GlassCard';
+import { PremiumButton } from '@/components/PremiumButton';
+import { copy } from '@/constants/copy';
+import { theme } from '@/constants/theme';
+import { PRODUCT_IDS, PRODUCT_CATALOG, type ProductId } from '@/constants/products';
+import { useEntitlementStore } from '@/store/useEntitlementStore';
+import { purchaseService } from '@/services/purchaseService';
+
+export default function Pricing() {
+  const [busy, setBusy] = useState<ProductId | 'restore' | null>(null);
+  const [prices, setPrices] = useState<Record<ProductId, string>>({
+    [PRODUCT_IDS.singleReading]: PRODUCT_CATALOG.single.fallbackPrice,
+    [PRODUCT_IDS.monthly]: PRODUCT_CATALOG.monthly.fallbackPrice,
+  });
+  const purchase = useEntitlementStore((s) => s.purchase);
+  const restore = useEntitlementStore((s) => s.restore);
+  const isConfigured = useEntitlementStore((s) => s.isConfigured);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [single, monthly] = await Promise.all([
+        purchaseService.getDisplayPrice(PRODUCT_IDS.singleReading),
+        purchaseService.getDisplayPrice(PRODUCT_IDS.monthly),
+      ]);
+      if (!cancelled) {
+        setPrices({
+          [PRODUCT_IDS.singleReading]: single,
+          [PRODUCT_IDS.monthly]: monthly,
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function buy(productId: ProductId) {
+    setBusy(productId);
+    const res = await purchase(productId);
+    setBusy(null);
+    if (res.cancelled) return;
+    if (res.pending) {
+      Alert.alert('Purchase pending', res.message ?? 'Your purchase is being processed.');
+      return;
+    }
+    if (!res.ok) {
+      Alert.alert('Purchase failed', res.message ?? 'Please try again.');
+      return;
+    }
+    if (productId === PRODUCT_IDS.monthly) {
+      router.replace('/scan');
+    } else {
+      router.replace('/scan');
+    }
+  }
+
+  async function doRestore() {
+    setBusy('restore');
+    const res = await restore();
+    setBusy(null);
+    if (!res.ok) {
+      Alert.alert('Restore', 'No purchases were restored.');
+    } else if (res.recoveredMonthly) {
+      Alert.alert('Restored', 'Your monthly subscription is active again.');
+    } else {
+      Alert.alert(
+        'Restore',
+        'Subscription state synced. Note: App Store consumable readings cannot be restored after they are used.',
+      );
+    }
+  }
+
+  return (
+    <ScreenContainer orbColour="Gold" orbSecondary="Violet">
+      <View style={styles.backRow}>
+        <PremiumButton label="← Back" onPress={() => router.back()} variant="subtle" />
+      </View>
+
+      <Text style={styles.title}>{copy.pricing.title}</Text>
+      <Text style={styles.sub}>{copy.pricing.sub}</Text>
+      <Text style={styles.tierExplain}>
+        One-off readings are single-use. Monthly members unlock the aura timeline, comparison, and AI Buddy.
+      </Text>
+
+      <GlassCard strong>
+        <Text style={styles.tierTitle}>{copy.pricing.single.title}</Text>
+        <Text style={styles.price}>{prices[PRODUCT_IDS.singleReading]}</Text>
+        <Text style={styles.desc}>{copy.pricing.single.desc}</Text>
+        <View style={styles.features}>
+          {copy.pricing.single.features.map((f) => <Feature key={f} label={f} />)}
+        </View>
+        {busy === PRODUCT_IDS.singleReading ? (
+          <ActivityIndicator color={theme.colors.auraGold} />
+        ) : (
+          <PremiumButton label={copy.pricing.single.cta} onPress={() => buy(PRODUCT_IDS.singleReading)} />
+        )}
+      </GlassCard>
+
+      <GlassCard strong>
+        <View style={styles.recommendedRow}>
+          <Text style={styles.tierTitle}>{copy.pricing.monthly.title}</Text>
+          <View style={styles.badge}><Text style={styles.badgeText}>Recommended</Text></View>
+        </View>
+        <Text style={styles.price}>{prices[PRODUCT_IDS.monthly]}</Text>
+        <Text style={styles.desc}>{copy.pricing.monthly.desc}</Text>
+        <View style={styles.features}>
+          {copy.pricing.monthly.features.map((f) => <Feature key={f} label={f} />)}
+        </View>
+        {busy === PRODUCT_IDS.monthly ? (
+          <ActivityIndicator color={theme.colors.auraGold} />
+        ) : (
+          <PremiumButton label={copy.pricing.monthly.cta} onPress={() => buy(PRODUCT_IDS.monthly)} />
+        )}
+      </GlassCard>
+
+      <PremiumButton
+        label={busy === 'restore' ? 'Restoring…' : 'Restore Purchases'}
+        onPress={doRestore}
+        variant="ghost"
+        disabled={busy === 'restore'}
+      />
+
+      {!isConfigured && (
+        <Text style={styles.devNote}>
+          Dev build: RevenueCat is not configured, so purchases are simulated locally. Add your API keys to use real billing.
+        </Text>
+      )}
+
+      <Text style={styles.foot}>{copy.disclaimers.short}</Text>
+    </ScreenContainer>
+  );
+}
+
+function Feature({ label }: { label: string }) {
+  return (
+    <View style={styles.featureRow}>
+      <Text style={styles.featureTick}>✦</Text>
+      <Text style={styles.featureText}>{label}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  backRow: { alignItems: 'flex-start' },
+  title: { color: theme.colors.softWhite, fontSize: 30, fontWeight: '300' },
+  sub: { color: theme.colors.mute, fontSize: 15 },
+  tierExplain: { color: theme.colors.dim, fontSize: 12, lineHeight: 18, marginTop: -8 },
+  tierTitle: { color: theme.colors.softWhite, fontSize: 20, fontWeight: '500' },
+  price: { color: theme.colors.auraGold, fontSize: 28, marginTop: 4, fontWeight: '300', letterSpacing: 0.5 },
+  desc: { color: theme.colors.mute, fontSize: 14, lineHeight: 21, marginTop: 10 },
+  features: { gap: 8, marginTop: theme.spacing.md, marginBottom: theme.spacing.lg },
+  featureRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  featureTick: { color: theme.colors.auraGold, marginTop: 2 },
+  featureText: { color: theme.colors.softWhite, fontSize: 14, flex: 1, lineHeight: 21 },
+  recommendedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  badge: {
+    borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.auraGold,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
+  },
+  badgeText: { color: theme.colors.auraGold, fontSize: 10, letterSpacing: 1.5 },
+  devNote: {
+    color: theme.colors.dim, fontSize: 11, textAlign: 'center', marginTop: 4, fontStyle: 'italic',
+  },
+  foot: { color: theme.colors.dim, fontSize: theme.size.micro, textAlign: 'center', marginTop: theme.spacing.md },
+});

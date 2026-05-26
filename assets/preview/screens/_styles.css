@@ -1,0 +1,271 @@
+/* AuraLens high-fidelity screen mockup styles.
+   These are HTML/CSS renderings of the React Native screens, sized to a
+   realistic iPhone viewport (393×852, iPhone 14/15). Real system typography,
+   real CSS animations, real glass blur. Not a simulator capture — but a
+   pixel-accurate preview of what the production app looks like. */
+
+:root {
+  --obsidian: #050507;
+  --obsidian-2: #0B0B10;
+  --glass: rgba(255,255,255,0.06);
+  --glass-strong: rgba(255,255,255,0.10);
+  --hairline: rgba(255,255,255,0.10);
+  --soft: #F7F3EA;
+  --mute: rgba(247,243,234,0.62);
+  --dim: rgba(247,243,234,0.38);
+  --gold: #F4C76B;
+  --gold-bright: #FBE3A2;
+  --violet: #9B6CFF;
+  --blue: #4DB8FF;
+  --green: #66E0A3;
+  --red: #C4522A;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  width: 393px; height: 852px;
+  font-family: -apple-system, "SF Pro Display", BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--soft);
+  background: var(--obsidian);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Cinematic obsidian backdrop with one drifting hero orb + particles ─── */
+.bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(155,108,255,0.28) 0%, rgba(5,5,7,0) 55%),
+    radial-gradient(ellipse at 80% 80%, rgba(77,184,255,0.16) 0%, rgba(5,5,7,0) 50%),
+    var(--obsidian);
+  pointer-events: none;
+}
+.bg::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(5,5,7,0) 50%, rgba(5,5,7,0.5) 100%);
+  pointer-events: none;
+}
+
+.orb {
+  position: absolute;
+  width: 360px; height: 360px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 42%, rgba(255,255,255,0.95) 0%, rgba(251,227,162,0.85) 8%, rgba(244,199,107,0.55) 22%, rgba(155,108,255,0.40) 45%, rgba(77,184,255,0.12) 75%, rgba(5,5,7,0) 100%);
+  filter: blur(2px);
+  animation: drift 14s ease-in-out infinite alternate, pulse 4.2s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 1;
+}
+.orb.small { width: 240px; height: 240px; }
+.orb.tiny  { width: 120px; height: 120px; }
+
+.orb-ring {
+  position: absolute;
+  border: 1px solid rgba(244,199,107,0.35);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+@keyframes drift {
+  from { transform: translate(-12px, 8px) scale(0.96); }
+  to   { transform: translate(12px, -8px) scale(1.03); }
+}
+@keyframes pulse {
+  from { opacity: 0.85; filter: blur(2px) brightness(0.95); }
+  to   { opacity: 1.0; filter: blur(1.5px) brightness(1.05); }
+}
+
+.particles {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 17% 14%, rgba(247,243,234,0.6), transparent),
+    radial-gradient(1px 1px at 38% 26%, rgba(247,243,234,0.4), transparent),
+    radial-gradient(1.5px 1.5px at 62% 18%, rgba(247,243,234,0.7), transparent),
+    radial-gradient(1px 1px at 81% 33%, rgba(244,199,107,0.6), transparent),
+    radial-gradient(1.2px 1.2px at 11% 58%, rgba(155,108,255,0.4), transparent),
+    radial-gradient(1px 1px at 47% 72%, rgba(247,243,234,0.5), transparent),
+    radial-gradient(1.4px 1.4px at 73% 88%, rgba(247,243,234,0.6), transparent),
+    radial-gradient(1px 1px at 88% 62%, rgba(77,184,255,0.5), transparent),
+    radial-gradient(1.2px 1.2px at 22% 84%, rgba(247,243,234,0.4), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Content layer ─────────────────────────────────────────────────────── */
+.screen {
+  position: relative; z-index: 3;
+  width: 100%; height: 100%;
+  padding: 60px 20px 34px;
+  display: flex; flex-direction: column;
+}
+
+.brand {
+  display: flex; align-items: baseline; gap: 8px;
+  letter-spacing: 4px; font-size: 11px; font-weight: 600; color: var(--soft);
+}
+.brand .by { letter-spacing: 2px; font-size: 9px; color: var(--dim); }
+
+.eyebrow {
+  color: var(--gold);
+  letter-spacing: 2.5px;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.title {
+  font-size: 36px; line-height: 42px; font-weight: 300;
+  letter-spacing: -0.5px; color: var(--soft);
+  margin: 12px 0;
+}
+
+.sub {
+  color: var(--mute);
+  font-size: 14px;
+  line-height: 21px;
+}
+
+.disclaimer {
+  color: var(--dim);
+  font-size: 10px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  line-height: 14px;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px 28px;
+  border-radius: 999px;
+  font-size: 14px; letter-spacing: 0.6px; font-weight: 600;
+  border: none; cursor: default;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #FBE3A2, #F4C76B, #C99645);
+  color: #1A1305;
+  box-shadow:
+    inset 0 0 0 1.4px #FBE3A2,
+    0 12px 24px rgba(244,199,107,0.35);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--soft);
+  border: 1px solid var(--hairline);
+}
+.btn-subtle {
+  background: transparent;
+  color: var(--mute);
+  font-size: 13px;
+}
+
+/* ── Glass cards ───────────────────────────────────────────────────────── */
+.glass {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--hairline);
+  border-radius: 28px;
+  padding: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass.strong { background: var(--glass-strong); }
+
+.glass::before {
+  content: "";
+  position: absolute; inset: 1px 1px auto 1px; height: 3px;
+  border-radius: 27px 27px 0 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent);
+  pointer-events: none;
+}
+
+.row { display: flex; align-items: center; gap: 12px; }
+.between { display: flex; justify-content: space-between; align-items: center; }
+.gap-sm { gap: 8px; }
+.gap-md { gap: 16px; }
+.gap-lg { gap: 24px; }
+
+.stack { display: flex; flex-direction: column; }
+.stack > * + * { margin-top: var(--stack, 16px); }
+
+.spacer { flex: 1; }
+
+/* ── Bullets and chips ─────────────────────────────────────────────────── */
+.bullet {
+  display: flex; align-items: flex-start; gap: 10px;
+  color: var(--soft); font-size: 13px; line-height: 20px;
+}
+.bullet::before {
+  content: ""; width: 6px; height: 6px; border-radius: 3px;
+  margin-top: 7px; flex-shrink: 0;
+  background: var(--gold);
+}
+.bullet.green::before { background: var(--green); }
+.bullet.red::before { background: var(--red); }
+
+.chip {
+  padding: 6px 12px;
+  border: 1px solid rgba(244,199,107,0.4);
+  background: rgba(244,199,107,0.05);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.tick { color: var(--gold); margin-right: 6px; }
+
+/* ── Zone bars ─────────────────────────────────────────────────────────── */
+.zone { margin-bottom: 14px; }
+.zone .zh { display: flex; justify-content: space-between; }
+.zone .zh .name { color: var(--soft); font-size: 14px; font-weight: 500; }
+.zone .zh .score { color: var(--gold); font-size: 14px; }
+.zone .bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin: 6px 0; overflow: hidden; }
+.zone .bar > div { height: 100%; background: var(--gold); }
+.zone .theme { color: var(--dim); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.zone .body { color: var(--mute); font-size: 12px; line-height: 17px; margin-top: 3px; }
+
+/* ── Chat bubbles (buddy) ──────────────────────────────────────────────── */
+.bubble {
+  padding: 12px 14px;
+  border-radius: 18px;
+  max-width: 86%;
+  border: 1px solid;
+  font-size: 13px; line-height: 19px;
+  margin-bottom: 10px;
+}
+.bubble.buddy {
+  align-self: flex-start;
+  background: rgba(155,108,255,0.10);
+  border-color: rgba(155,108,255,0.30);
+  color: var(--soft);
+}
+.bubble.user {
+  align-self: flex-end;
+  background: rgba(244,199,107,0.10);
+  border-color: rgba(244,199,107,0.35);
+  color: var(--gold);
+}
+
+/* ── Score block (result) ──────────────────────────────────────────────── */
+.score-big { font-size: 56px; font-weight: 200; letter-spacing: -1px; color: var(--soft); line-height: 1; }
+.score-of  { color: var(--dim); font-size: 14px; }
+
+/* ── Pricing card top row ──────────────────────────────────────────────── */
+.tier-title { color: var(--soft); font-size: 19px; font-weight: 500; }
+.tier-price { color: var(--gold); font-size: 26px; font-weight: 300; letter-spacing: 0.5px; margin-top: 4px; }
+.tier-desc  { color: var(--mute); font-size: 13px; line-height: 19px; margin-top: 8px; }
+.badge {
+  border: 1px solid var(--gold);
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+/* ── Frame mark (only for the gallery page itself) ─────────────────────── */
+body.frame { background: transparent; }
