@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { STORAGE_KEYS, loadJSON, saveJSON } from '@/services/storage';
-import { authService, type AuthSession } from '@/services/authService';
+import { authService, type AuthSession, type OAuthProvider } from '@/services/authService';
 
 export interface AuthPrefs {
   cloudSyncEnabled: boolean;
@@ -17,7 +17,8 @@ interface AuthState extends AuthPrefs {
 
   hydrate: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
-  signUp: (email: string, password: string) => Promise<{ ok: boolean; message?: string }>;
+  signUp: (email: string, password: string) => Promise<{ ok: boolean; message?: string; needsEmailConfirmation?: boolean }>;
+  signInWithOAuth: (provider: OAuthProvider) => Promise<{ ok: boolean; message?: string }>;
   sendMagicLink: (email: string) => Promise<{ ok: boolean; message?: string }>;
   signOut: () => Promise<void>;
   setCloudSyncEnabled: (v: boolean) => Promise<void>;
@@ -78,7 +79,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { ok: false, message: res.message };
     }
     set({ loading: false, session: res.session, isAuthenticated: !!res.session });
-    return { ok: true };
+    return { ok: true, needsEmailConfirmation: res.needsEmailConfirmation };
+  },
+
+  async signInWithOAuth(provider) {
+    set({ loading: true, error: undefined });
+    const res = await authService.signInWithOAuthProvider(provider);
+    set({ loading: false, error: res.ok ? undefined : res.message });
+    return res.ok ? { ok: true } : { ok: false, message: res.message };
   },
 
   async sendMagicLink(email) {

@@ -8,8 +8,10 @@ export interface AuthSession {
 }
 
 export type AuthResult =
-  | { ok: true; session?: AuthSession }
+  | { ok: true; session?: AuthSession; needsEmailConfirmation?: boolean }
   | { ok: false; message: string };
+
+export type OAuthProvider = 'google' | 'apple';
 
 function projectSession(session: Session | null): AuthSession | undefined {
   if (!session) return undefined;
@@ -48,7 +50,31 @@ export const authService = {
     if (!sb) return { ok: false, message: 'Cloud sync is not configured in this build.' };
     const { data, error } = await sb.auth.signUp({ email, password });
     if (error) return { ok: false, message: friendlyAuthError(error.message) };
-    return { ok: true, session: projectSession(data.session) };
+    const session = projectSession(data.session);
+    // If Supabase has email confirmation enabled, signUp returns a user but
+    // NO session. We must tell the UI so it can prompt the user to check
+    // their inbox instead of silently routing to settings.
+    return {
+      ok: true,
+      session,
+      needsEmailConfirmation: !session && !!data.user,
+    };
+  },
+
+  async signInWithOAuthProvider(provider: OAuthProvider): Promise<AuthResult> {
+    const sb = getSupabase();
+    if (!sb) return { ok: false, message: 'Cloud sync is not configured in this build.' };
+    if (typeof window === 'undefined') {
+      return { ok: false, message: 'OAuth sign-in is only available on web for now.' };
+    }
+    const { error } = await sb.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/` },
+    });
+    if (error) return { ok: false, message: friendlyAuthError(error.message) };
+    // On success the browser is being navigated away by Supabase; this
+    // promise effectively never resolves before redirect.
+    return { ok: true };
   },
 
   async sendMagicLink(email: string, redirectTo?: string): Promise<AuthResult> {
