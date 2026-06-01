@@ -139,20 +139,25 @@ export function PremiumButton({
     );
   };
 
-  // ── PRIMARY · WEB ───────────────────────────────────────────────────────
-  // Stardust-style real HTML <button> with proper inset shadows, pseudo-
-  // element highlights, hover specular, and active compression. Aura gold
-  // on obsidian palette. CSS lives in a one-time <style> tag (id keeps it
-  // dedupable across many button instances).
-  if (variant === 'primary' && Platform.OS === 'web') {
-    const sizePx = size === 'lg' ? '20px 38px' : size === 'sm' ? '12px 24px' : '16px 32px';
+  // ── WEB · STARDUST (every variant) ──────────────────────────────────────
+  // Single HTML <button> shape with a variant modifier class. Same depth +
+  // inset + pseudo specular for all variants — only the colour palette
+  // differs. CSS lives once in <style id="auralens-stardust-css">.
+  if (Platform.OS === 'web' && variant !== 'subtle') {
+    const sizePx = size === 'lg' ? '20px 38px' : size === 'sm' ? '12px 22px' : '16px 32px';
     const fontPx = size === 'lg' ? 18 : size === 'sm' ? 13 : 15;
+    const modifier =
+      variant === 'primary'   ? 'auralens-stardust--gold'   :
+      variant === 'secondary' ? 'auralens-stardust--silver' :
+      variant === 'ghost'     ? 'auralens-stardust--ghost'  :
+      variant === 'danger'    ? 'auralens-stardust--danger' :
+                                'auralens-stardust--silver';
+    const showGlyph = variant === 'primary';
     return (
       <>
         <AuralensStardustCSS />
-        {/* eslint-disable-next-line react/no-unknown-property */}
         {React.createElement('button' as any, {
-          className: 'auralens-stardust',
+          className: `auralens-stardust ${modifier}`,
           onClick: handlePress,
           disabled: inactive,
           'aria-label': a11y.accessibilityLabel,
@@ -167,12 +172,13 @@ export function PremiumButton({
             opacity: inactive ? 0.45 : 1,
             width: fullWidth ? '100%' : 'auto',
             display: 'inline-block',
+            margin: 0,
           },
         }, React.createElement('span', { className: 'auralens-stardust__shell' },
           React.createElement('span', { className: 'auralens-stardust__wrap' },
             React.createElement('span', { className: 'auralens-stardust__label', style: { fontSize: fontPx, padding: sizePx } },
-              React.createElement('span', { className: 'auralens-stardust__glyph', 'aria-hidden': true }, '✦'),
-              React.createElement('span', { className: 'auralens-stardust__glyph auralens-stardust__glyph--hover', 'aria-hidden': true }, '✧'),
+              showGlyph ? React.createElement('span', { className: 'auralens-stardust__glyph', 'aria-hidden': true }, '✦') : null,
+              showGlyph ? React.createElement('span', { className: 'auralens-stardust__glyph auralens-stardust__glyph--hover', 'aria-hidden': true }, '✧') : null,
               loading ? React.createElement('span', null, '…') : label,
             ),
           ),
@@ -393,19 +399,75 @@ const AURALENS_STARDUST_CSS = `
   -webkit-tap-highlight-color: transparent;
 }
 .auralens-stardust__shell {
+  /* CSS variables defaulted here, overridden per modifier */
   --bg: #0b0810;
   --ink: rgba(251, 227, 162, 0.96);
+  --hi: rgba(255, 235, 200, 0.30);
+  --core: rgba(244, 199, 107, 0.45);
+  --hi-hover: rgba(255, 235, 200, 0.42);
+  --core-hover: rgba(244, 199, 107, 0.65);
+  --halo: rgba(244, 199, 107, 0.16);
+  --halo-hover: rgba(244, 199, 107, 0.22);
+  --top-grad-1: rgba(244, 199, 107, 0.32);
   display: inline-block;
   position: relative;
   border-radius: 999px;
   background-color: var(--bg);
   transition: transform 0.2s ease, box-shadow 0.3s ease;
   box-shadow:
-    inset 0 0.35rem 0.9rem rgba(255, 235, 200, 0.30),
+    inset 0 0.35rem 0.9rem var(--hi),
     inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.70),
-    inset 0 -0.45rem 0.9rem rgba(244, 199, 107, 0.45),
+    inset 0 -0.45rem 0.9rem var(--core),
     0 2.4rem 2.6rem rgba(0, 0, 0, 0.35),
     0 0.9rem 1rem -0.6rem rgba(0, 0, 0, 0.80);
+}
+
+/* Gold (primary) — default tokens above already match */
+
+/* Silver / cool (secondary) */
+.auralens-stardust--silver .auralens-stardust__shell {
+  --bg: #0a0a14;
+  --ink: rgba(247, 243, 234, 0.95);
+  --hi: rgba(255, 255, 255, 0.20);
+  --core: rgba(155, 108, 255, 0.32);
+  --hi-hover: rgba(255, 255, 255, 0.32);
+  --core-hover: rgba(155, 108, 255, 0.50);
+  --halo: rgba(155, 108, 255, 0.16);
+  --halo-hover: rgba(155, 108, 255, 0.24);
+  --top-grad-1: rgba(255, 255, 255, 0.22);
+}
+
+/* Ghost — quieter, less depth */
+.auralens-stardust--ghost .auralens-stardust__shell {
+  --bg: rgba(10, 10, 16, 0.55);
+  --ink: rgba(247, 243, 234, 0.85);
+  --hi: rgba(255, 255, 255, 0.10);
+  --core: rgba(155, 108, 255, 0.16);
+  --hi-hover: rgba(255, 255, 255, 0.20);
+  --core-hover: rgba(155, 108, 255, 0.28);
+  --halo: rgba(255, 255, 255, 0.06);
+  --halo-hover: rgba(255, 255, 255, 0.12);
+  --top-grad-1: rgba(255, 255, 255, 0.12);
+}
+.auralens-stardust--ghost .auralens-stardust__shell {
+  box-shadow:
+    inset 0 0.20rem 0.6rem var(--hi),
+    inset 0 -0.45rem 0.9rem var(--core),
+    0 1.4rem 1.6rem rgba(0, 0, 0, 0.30),
+    0 0.5rem 0.6rem -0.4rem rgba(0, 0, 0, 0.55);
+}
+
+/* Danger */
+.auralens-stardust--danger .auralens-stardust__shell {
+  --bg: #1a0a0a;
+  --ink: rgba(255, 220, 215, 0.96);
+  --hi: rgba(255, 220, 215, 0.30);
+  --core: rgba(229, 89, 78, 0.55);
+  --hi-hover: rgba(255, 220, 215, 0.42);
+  --core-hover: rgba(229, 89, 78, 0.75);
+  --halo: rgba(229, 89, 78, 0.16);
+  --halo-hover: rgba(229, 89, 78, 0.24);
+  --top-grad-1: rgba(229, 89, 78, 0.32);
 }
 .auralens-stardust__wrap {
   display: block;
@@ -424,17 +486,17 @@ const AURALENS_STARDUST_CSS = `
   left: -18%; right: -18%;
   bottom: 24%; top: -100%;
   border-radius: 50%;
-  background-color: rgba(244, 199, 107, 0.16);
+  background-color: var(--halo);
   filter: blur(2px);
 }
 .auralens-stardust__wrap::after {
   left: 7%; right: 7%;
   top: 14%; bottom: 40%;
   border-radius: 22px 22px 0 0;
-  box-shadow: inset 0 10px 8px -10px rgba(255, 235, 200, 0.65);
+  box-shadow: inset 0 10px 8px -10px var(--hi);
   background: linear-gradient(
     180deg,
-    rgba(244, 199, 107, 0.32) 0%,
+    var(--top-grad-1) 0%,
     rgba(0, 0, 0, 0) 50%,
     rgba(0, 0, 0, 0) 100%
   );
@@ -465,15 +527,15 @@ const AURALENS_STARDUST_CSS = `
 
 .auralens-stardust:hover .auralens-stardust__shell {
   box-shadow:
-    inset 0 0.35rem 0.6rem rgba(255, 235, 200, 0.42),
+    inset 0 0.35rem 0.6rem var(--hi-hover),
     inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.70),
-    inset 0 -0.5rem 1.1rem rgba(244, 199, 107, 0.65),
+    inset 0 -0.5rem 1.1rem var(--core-hover),
     0 2.4rem 2.6rem rgba(0, 0, 0, 0.35),
     0 0.9rem 1rem -0.6rem rgba(0, 0, 0, 0.80);
 }
 .auralens-stardust:hover .auralens-stardust__wrap::before {
   transform: translateY(-6%);
-  background-color: rgba(244, 199, 107, 0.22);
+  background-color: var(--halo-hover);
 }
 .auralens-stardust:hover .auralens-stardust__wrap::after {
   opacity: 0.55;
