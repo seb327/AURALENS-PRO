@@ -11,6 +11,30 @@
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
+// ─── Eager body styling (runs at module load) ───────────────────────────────
+// Force the browser background to obsidian immediately — before React has
+// painted anything. Without this, expo's default white body flashes through
+// during the first frames (and through any transparent layer afterwards).
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const apply = () => {
+    if (document.querySelector('style[data-auralens-eager]')) return;
+    const s = document.createElement('style');
+    s.setAttribute('data-auralens-eager', '1');
+    s.textContent = `
+      html, body, #root { background-color: #050507 !important; color: #F7F3EA; }
+      body {
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        font-feature-settings: 'cv11', 'ss01', 'kern';
+      }
+    `;
+    (document.head || document.documentElement).appendChild(s);
+  };
+  apply();
+}
+
 // ─── Fragment shader ─────────────────────────────────────────────────────────
 // Aura field:
 //   - 4-octave fractal noise, domain-warped for organic flow
@@ -338,6 +362,10 @@ export function AuraShaderBackground() {
 
   if (Platform.OS !== 'web') return null;
 
+  // Canvas + grain sit at position:fixed, z-index:0. The body always gets an
+  // obsidian background colour from injected CSS so even if WebGL fails the
+  // page is dark, not white. pointer-events:none so they never intercept
+  // clicks bound to the React UI.
   return (
     <>
       <canvas
@@ -345,28 +373,25 @@ export function AuraShaderBackground() {
         aria-hidden
         style={{
           position: 'fixed',
-          inset: 0,
+          top: 0, left: 0, right: 0, bottom: 0,
           width: '100vw',
           height: '100vh',
-          zIndex: -2,
           display: 'block',
           background: '#050507',
           pointerEvents: 'none',
         }}
       />
-      {/* CSS grain overlay (10kb SVG-as-data-uri noise) for extra texture
-          across cards and panels — sits between the shader and the UI. */}
+      {/* SVG-as-data-uri grain overlay for filmic texture. */}
       <div
         aria-hidden
         style={{
           position: 'fixed',
-          inset: 0,
-          zIndex: -1,
+          top: 0, left: 0, right: 0, bottom: 0,
           pointerEvents: 'none',
           backgroundImage:
             "url(\"data:image/svg+xml;utf8,<svg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
           backgroundSize: '220px 220px',
-          opacity: 0.55,
+          opacity: 0.30,
           mixBlendMode: 'overlay',
         }}
       />

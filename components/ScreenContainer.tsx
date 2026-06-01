@@ -32,16 +32,18 @@ export function ScreenContainer({
   orbSecondary = 'Blue',
 }: Props) {
   return (
-    <View style={[styles.root, IS_WEB && styles.rootWeb]}>
+    <View style={styles.root}>
       <StatusBar style="light" />
-      {/* Native: layered obsidian gradient + orb + particles.
-          Web: skip — the shader background is on the page already. */}
-      {!IS_WEB && (
-        <LinearGradient
-          colors={['#050507', '#0A0A12', '#050507']}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
+      {/* A semi-transparent obsidian wash so the WebGL shader (on web) shows
+          THROUGH but every screen still reads as dark even if WebGL fails.
+          On native this is fully opaque — the shader doesn't run there. */}
+      <LinearGradient
+        colors={IS_WEB
+          ? ['rgba(5,5,7,0.55)', 'rgba(10,10,18,0.62)', 'rgba(5,5,7,0.78)']
+          : ['#050507', '#0A0A12', '#050507']}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Native gets the orb + particles; on web the shader IS the atmosphere. */}
       {!IS_WEB && orb && (
         <View pointerEvents="none" style={styles.orbWrap}>
           <AuraOrb size={420} colour={orbColour} secondary={orbSecondary} intensity={0.6} />

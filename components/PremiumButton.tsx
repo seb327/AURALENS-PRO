@@ -133,7 +133,10 @@ export function PremiumButton({
     );
   };
 
-  // ── PRIMARY (solid gold gradient — high contrast, dark label) ──────────
+  // ── PRIMARY ────────────────────────────────────────────────────────────
+  // Luxury treatment: deep obsidian face, thin gold gradient border, gold
+  // text. Reads like a high-end watch or fragrance brand button — quietly
+  // expensive, not bright yellow plastic.
   if (variant === 'primary') {
     return (
       <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
@@ -149,9 +152,11 @@ export function PremiumButton({
             colors={theme.gradients.gold as any}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[styles.primarySolid, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}
+            style={styles.primaryBorder}
           >
-            {content('#1A1305')}
+            <View style={[styles.primaryFace, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}>
+              {content(theme.colors.auraGoldLight)}
+            </View>
           </LinearGradient>
         </Pressable>
       </Animated.View>
@@ -251,13 +256,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // PRIMARY — solid gold gradient face, dark label = highest contrast & affordance
+  // PRIMARY — obsidian face inside a hairline gold-gradient border
   primaryWrap: {
     borderRadius: theme.radius.pill,
     overflow: 'hidden',
     minHeight: 52,
   },
-  primarySolid: {
+  primaryBorder: {
+    padding: 1.2,
+    borderRadius: theme.radius.pill,
+  },
+  primaryFace: {
+    backgroundColor: 'rgba(10,8,14,0.92)',
     borderRadius: theme.radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
