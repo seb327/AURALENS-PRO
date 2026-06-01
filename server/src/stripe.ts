@@ -87,52 +87,62 @@ export async function handleCreateCheckout(req: Request, res: Response): Promise
     return;
   }
 
-  const e = env();
-  const stripe = stripeClient();
-  if (!stripe) { res.status(500).json({ ok: false, error: 'Stripe not configured on server' }); return; }
-
-  // Auth: verify the caller's Supabase JWT and pull user.id
-  const authHeader = (req.headers.authorization ?? '').toString();
-  if (!e.SUPABASE_URL || !e.SUPABASE_ANON_KEY) {
-    res.status(500).json({ ok: false, error: 'Supabase not configured on server' });
-    return;
-  }
-  const userClient = createClient(e.SUPABASE_URL, e.SUPABASE_ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) { res.status(401).json({ ok: false, error: 'Unauthorized' }); return; }
-  const user = userData.user;
-
-  const body = req.body as { productId?: string; returnUrl?: string };
-  const productId = body.productId;
-  const returnUrl = body.returnUrl;
-  if (productId !== 'single' && productId !== 'monthly') {
-    res.status(400).json({ ok: false, error: 'productId must be "single" or "monthly"' });
-    return;
-  }
-  if (!returnUrl || !/^https?:\/\//.test(returnUrl)) {
-    res.status(400).json({ ok: false, error: 'returnUrl must be a valid http(s) URL' });
-    return;
-  }
-
-  const priceId = productId === 'single' ? e.STRIPE_PRICE_SINGLE : e.STRIPE_PRICE_MONTHLY;
-  if (!priceId) {
-    res.status(500).json({ ok: false, error: `Stripe price for "${productId}" not configured` });
-    return;
-  }
-
   try {
+    const e = env();
+    const stripe = stripeClient();
+    if (!stripe) { res.status(500).json({ ok: false, error: 'Stripe not configured on server' }); return; }
+
+    if (!e.SUPABASE_URL || !e.SUPABASE_ANON_KEY) {
+      res.status(500).json({ ok: false, error: 'Supabase not configured on server' });
+      return;
+    }
+
+    // Auth: verify the caller's Supabase JWT. Any throw here = stale token,
+    // treat as 401 rather than crashing the Node process.
+    const authHeader = (req.headers.authorization ?? '').toString();
+    let userId: string;
+    let userEmail: string | undefined;
+    try {
+      const userClient = createClient(e.SUPABASE_URL, e.SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        res.status(401).json({ ok: false, error: 'Your session has expired. Please sign in again.' });
+        return;
+      }
+      userId = userData.user.id;
+      userEmail = userData.user.email ?? undefined;
+    } catch {
+      res.status(401).json({ ok: false, error: 'Your session has expired. Please sign in again.' });
+      return;
+    }
+
+    const body = (req.body ?? {}) as { productId?: string; returnUrl?: string };
+    const productId = body.productId;
+    const returnUrl = body.returnUrl;
+    if (productId !== 'single' && productId !== 'monthly') {
+      res.status(400).json({ ok: false, error: 'productId must be "single" or "monthly"' });
+      return;
+    }
+    if (!returnUrl || !/^https?:\/\//.test(returnUrl)) {
+      res.status(400).json({ ok: false, error: 'returnUrl must be a valid http(s) URL' });
+      return;
+    }
+
+    const priceId = productId === 'single' ? e.STRIPE_PRICE_SINGLE : e.STRIPE_PRICE_MONTHLY;
+    if (!priceId) {
+      res.status(500).json({ ok: false, error: `Stripe price for "${productId}" not configured` });
+      return;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: productId === 'monthly' ? 'subscription' : 'payment',
       line_items: [{ price: priceId, quantity: 1 }],
-      // Used by the webhook to know which AuraLens user to credit.
-      client_reference_id: user.id,
-      customer_email: user.email ?? undefined,
-      metadata: { productId, supabaseUserId: user.id },
-      // Success page receives ?session_id=… so the client can show a
-      // "processing your purchase…" state while the webhook lands.
+      client_reference_id: userId,
+      customer_email: userEmail,
+      metadata: { productId, supabaseUserId: userId },
       success_url: `${returnUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${returnUrl}?checkout=cancelled`,
       allow_promotion_codes: true,

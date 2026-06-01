@@ -325,6 +325,32 @@ if (hasWebBundle) {
   app.post('/', handleAiBuddy);
 }
 
+// Global error handler — never let a thrown error crash the process or
+// return a 502 from Railway. Always respond with a clean JSON 500.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: any, _req: Request, res: Response, _next: any) => {
+  applyCors(res);
+  // eslint-disable-next-line no-console
+  console.error('[server] unhandled error:', err?.message ?? err);
+  if (!res.headersSent) {
+    res.status(500).json({
+      ok: false,
+      error: err?.message ?? 'Unexpected server error.',
+    });
+  }
+});
+
+// Surface unhandled rejections / uncaught exceptions to the logs without
+// terminating the process — protects long-running webhook delivery uptime.
+process.on('unhandledRejection', (reason) => {
+  // eslint-disable-next-line no-console
+  console.error('[server] unhandledRejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  // eslint-disable-next-line no-console
+  console.error('[server] uncaughtException:', err);
+});
+
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
 app.listen(PORT, HOST, () => {

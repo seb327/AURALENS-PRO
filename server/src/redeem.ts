@@ -54,96 +54,119 @@ export async function handleRedeemCode(req: Request, res: Response): Promise<voi
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST')    { res.status(405).json({ ok: false, error: 'Method not allowed' }); return; }
 
-  const body = (req.body ?? {}) as { code?: string };
-  const submitted = (body.code ?? '').trim().toUpperCase();
-  if (!submitted) {
-    res.status(400).json({ ok: false, error: 'Missing code.' });
-    return;
-  }
+  try {
+    const body = (req.body ?? {}) as { code?: string };
+    const submitted = (body.code ?? '').trim().toUpperCase();
+    if (!submitted) {
+      res.status(400).json({ ok: false, error: 'Missing code.' });
+      return;
+    }
 
-  // Auth — must be a signed-in Supabase user so we can attach the grant.
-  const supabaseUrl = process.env.SUPABASE_URL ?? '';
-  const anonKey = process.env.SUPABASE_ANON_KEY ?? '';
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-    res.status(500).json({ ok: false, error: 'Server is not fully configured.' });
-    return;
-  }
+    const supabaseUrl = process.env.SUPABASE_URL ?? '';
+    const anonKey = process.env.SUPABASE_ANON_KEY ?? '';
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+      res.status(500).json({ ok: false, error: 'Server is not fully configured.' });
+      return;
+    }
 
-  const authHeader = req.headers.authorization ?? '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-  if (!token) {
-    res.status(401).json({ ok: false, error: 'Sign in to redeem a code.' });
-    return;
-  }
+    const authHeader = req.headers.authorization ?? '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) {
+      res.status(401).json({ ok: false, error: 'Sign in to redeem a code.' });
+      return;
+    }
 
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: userData, error: userErr } = await userClient.auth.getUser();
-  if (userErr || !userData?.user) {
-    res.status(401).json({ ok: false, error: 'Sign in to redeem a code.' });
-    return;
-  }
-  const userId = userData.user.id;
+    // Validate the JWT and resolve the user. Anything thrown here is
+    // treated as a 401, never a 500 — the most common cause is an expired
+    // session and the user just needs to sign in again.
+    let userId: string;
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser();
+      if (userErr || !userData?.user) {
+        res.status(401).json({ ok: false, error: 'Your session has expired. Please sign in again.' });
+        return;
+      }
+      userId = userData.user.id;
+    } catch (authError: any) {
+      res.status(401).json({ ok: false, error: 'Your session has expired. Please sign in again.' });
+      return;
+    }
 
-  // Validate code.
-  const codes = parseCodes(process.env.VIP_CODES);
-  const match = codes.find((c) => c.code === submitted);
-  if (!match) {
-    res.status(400).json({ ok: false, error: 'Code not recognised.' });
-    return;
-  }
+    // Validate code.
+    const codes = parseCodes(process.env.VIP_CODES);
+    const match = codes.find((c) => c.code === submitted);
+    if (!match) {
+      res.status(400).json({ ok: false, error: 'Code not recognised.' });
+      return;
+    }
 
-  // Read current entitlement (so we add credits instead of overwriting).
-  const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: existing } = await adminClient
-    .from('entitlement_snapshots')
-    .select('has_monthly,reading_credits,active_product_ids')
-    .eq('user_id', userId)
-    .order('last_synced_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const prevMonthly = existing?.has_monthly ?? false;
-  const prevCredits = (existing?.reading_credits as number | null) ?? 0;
-  const prevProducts = (existing?.active_product_ids as string[] | null) ?? [];
-
-  const has_monthly = match.grant === 'monthly' ? true : prevMonthly;
-  const reading_credits = match.grant === 'single' ? prevCredits + 1 : prevCredits;
-  const active_product_ids = match.grant === 'monthly'
-    ? Array.from(new Set([...prevProducts, 'auralens_monthly_799']))
-    : prevProducts;
-
-  const { error: insErr } = await adminClient
-    .from('entitlement_snapshots')
-    .insert({
-      user_id: userId,
-      has_monthly,
-      reading_credits,
-      active_product_ids,
-      raw: {
-        source: 'vip-code-redeemed',
-        code: match.code,
-        grant: match.grant,
-        redeemed_at: new Date().toISOString(),
-      },
+    // Read current entitlement (so we add credits instead of overwriting).
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
 
-  if (insErr) {
-    res.status(500).json({ ok: false, error: `Could not save entitlement: ${insErr.message}` });
-    return;
-  }
+    let prevMonthly = false;
+    let prevCredits = 0;
+    let prevProducts: string[] = [];
+    try {
+      const { data: existing } = await adminClient
+        .from('entitlement_snapshots')
+        .select('has_monthly,reading_credits,active_product_ids')
+        .eq('user_id', userId)
+        .order('last_synced_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      prevMonthly = existing?.has_monthly ?? false;
+      prevCredits = (existing?.reading_credits as number | null) ?? 0;
+      prevProducts = (existing?.active_product_ids as string[] | null) ?? [];
+    } catch {
+      // best-effort — fall through with defaults
+    }
 
-  res.json({
-    ok: true,
-    grant: match.grant,
-    has_monthly,
-    reading_credits,
-  });
+    const has_monthly = match.grant === 'monthly' ? true : prevMonthly;
+    const reading_credits = match.grant === 'single' ? prevCredits + 1 : prevCredits;
+    const active_product_ids = match.grant === 'monthly'
+      ? Array.from(new Set([...prevProducts, 'auralens_monthly_799']))
+      : prevProducts;
+
+    const { error: insErr } = await adminClient
+      .from('entitlement_snapshots')
+      .insert({
+        user_id: userId,
+        has_monthly,
+        reading_credits,
+        active_product_ids,
+        raw: {
+          source: 'vip-code-redeemed',
+          code: match.code,
+          grant: match.grant,
+          redeemed_at: new Date().toISOString(),
+        },
+      });
+
+    if (insErr) {
+      res.status(500).json({ ok: false, error: `Could not save entitlement: ${insErr.message}` });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      grant: match.grant,
+      has_monthly,
+      reading_credits,
+    });
+  } catch (e: any) {
+    // Catch-all so we never crash the Node process. Always return JSON.
+    res.status(500).json({
+      ok: false,
+      error: e?.message ?? 'Unexpected server error.',
+    });
+  }
 }
 
 export function redeemHealth(): { configured: boolean; codeCount: number } {
