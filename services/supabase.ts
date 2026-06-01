@@ -42,10 +42,19 @@ export function getSupabase(): SupabaseClient | null {
       storage: AsyncStorage as any,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // OAuth providers return the session in the URL hash on redirect —
+      // we need to detect that so the user actually gets signed in.
+      detectSessionInUrl: true,
+      flowType: 'pkce',
     },
     global: {
       headers: { 'x-app': 'auralens' },
+    },
+    // We don't use Supabase Realtime. Disabling the channel keeps the
+    // client from trying to open a WebSocket against the project URL,
+    // which throws "no web socket support" in some browser/proxy combos.
+    realtime: {
+      params: { eventsPerSecond: 0 },
     },
   });
   configured = true;
