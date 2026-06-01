@@ -8,6 +8,7 @@ import { useReadingStore } from '@/store/useReadingStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBuddyStore } from '@/store/useBuddyStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AuraShaderBackground } from '@/components/AuraShaderBackground';
 import { theme } from '@/constants/theme';
 
 // ─── Web-safe Alert.alert ────────────────────────────────────────────────────
@@ -75,10 +76,17 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.obsidian }}>
       <SafeAreaProvider>
         <ErrorBoundary>
+          {/* WebGL aura field — web only, renders behind everything else.
+              On native it returns null. */}
+          <AuraShaderBackground />
           <Stack
             screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: theme.colors.obsidian },
+              // On web, let the shader show through. On native, keep obsidian.
+              contentStyle: {
+                backgroundColor:
+                  Platform.OS === 'web' ? 'transparent' : theme.colors.obsidian,
+              },
               animation: 'fade',
             }}
           />

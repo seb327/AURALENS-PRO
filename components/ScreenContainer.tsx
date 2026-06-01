@@ -1,11 +1,16 @@
 import { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { ParticleField } from './ParticleField';
 import { AuraOrb } from './AuraOrb';
 import { theme, type AuraColourKey } from '@/constants/theme';
+
+// On web the WebGL shader background sits behind every screen at z=-2,
+// so screens render TRANSPARENT and let the shader show through. On
+// native we keep the existing layered gradient + orb + particles.
+const IS_WEB = Platform.OS === 'web';
 
 interface Props {
   children: ReactNode;
@@ -27,18 +32,22 @@ export function ScreenContainer({
   orbSecondary = 'Blue',
 }: Props) {
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, IS_WEB && styles.rootWeb]}>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#050507', '#0A0A12', '#050507']}
-        style={StyleSheet.absoluteFill}
-      />
-      {orb && (
+      {/* Native: layered obsidian gradient + orb + particles.
+          Web: skip — the shader background is on the page already. */}
+      {!IS_WEB && (
+        <LinearGradient
+          colors={['#050507', '#0A0A12', '#050507']}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
+      {!IS_WEB && orb && (
         <View pointerEvents="none" style={styles.orbWrap}>
           <AuraOrb size={420} colour={orbColour} secondary={orbSecondary} intensity={0.6} />
         </View>
       )}
-      {particles && <ParticleField />}
+      {!IS_WEB && particles && <ParticleField />}
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {scroll ? (
           <ScrollView
@@ -57,6 +66,7 @@ export function ScreenContainer({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.obsidian },
+  rootWeb: { backgroundColor: 'transparent' },
   safe: { flex: 1 },
   orbWrap: {
     position: 'absolute',
