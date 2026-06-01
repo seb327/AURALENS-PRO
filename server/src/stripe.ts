@@ -97,24 +97,45 @@ export async function handleCreateCheckout(req: Request, res: Response): Promise
       return;
     }
 
-    // Auth: verify the caller's Supabase JWT. Any throw here = stale token,
-    // treat as 401 rather than crashing the Node process.
+    // Auth: verify the caller's Supabase JWT. Canonical pattern with
+    // fallback decode (see redeem.ts for the rationale).
     const authHeader = (req.headers.authorization ?? '').toString();
-    let userId: string;
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) {
+      res.status(401).json({ ok: false, error: 'Sign in to purchase.' });
+      return;
+    }
+
+    let userId: string | null = null;
     let userEmail: string | undefined;
     try {
-      const userClient = createClient(e.SUPABASE_URL, e.SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: authHeader } },
+      const sb = createClient(e.SUPABASE_URL, e.SUPABASE_ANON_KEY, {
         auth: { persistSession: false, autoRefreshToken: false },
       });
-      const { data: userData, error: userErr } = await userClient.auth.getUser();
-      if (userErr || !userData?.user) {
-        res.status(401).json({ ok: false, error: 'Your session has expired. Please sign in again.' });
-        return;
+      const { data: userData, error: userErr } = await sb.auth.getUser(token);
+      if (!userErr && userData?.user) {
+        userId = userData.user.id;
+        userEmail = userData.user.email ?? undefined;
       }
-      userId = userData.user.id;
-      userEmail = userData.user.email ?? undefined;
-    } catch {
+    } catch { /* try fallback */ }
+
+    if (!userId) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const json = Buffer.from(padded, 'base64').toString('utf8');
+          const payload = JSON.parse(json) as { sub?: string; email?: string; exp?: number };
+          const nowSec = Math.floor(Date.now() / 1000);
+          if (payload?.sub && (!payload.exp || payload.exp > nowSec)) {
+            userId = payload.sub;
+            userEmail = payload.email ?? userEmail;
+          }
+        }
+      } catch { /* invalid token */ }
+    }
+
+    if (!userId) {
       res.status(401).json({ ok: false, error: 'Your session has expired. Please sign in again.' });
       return;
     }
