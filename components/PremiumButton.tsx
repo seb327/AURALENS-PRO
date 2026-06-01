@@ -140,10 +140,8 @@ export function PremiumButton({
   };
 
   // ── PRIMARY ────────────────────────────────────────────────────────────
-  // Filled luxury surface: dark glass base, soft gold→violet gradient on
-  // top, 1px white specular highlight at the top edge, gold-glow drop
-  // shadow underneath. Cream label, not gold-on-gold. Reads as a
-  // physical premium button, not an outline.
+  // Dark glass base + subtle gold tint + soft glow.
+  // NOT a flat solid yellow block.
   if (variant === 'primary') {
     return (
       <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
@@ -155,27 +153,27 @@ export function PremiumButton({
           {...a11y}
           style={[styles.primaryWrap, theme.shadow.glowGold, baseDisabled]}
         >
-          {/* Base obsidian glass */}
+          {/* Deep glass base */}
           <View style={styles.primaryBase} />
-          {/* Soft gold→violet surface gradient */}
+          {/* Subtle gold→violet tint */}
           <LinearGradient
-            colors={['rgba(244,199,107,0.55)', 'rgba(201,150,69,0.32)', 'rgba(155,108,255,0.22)']}
+            colors={['rgba(244,199,107,0.22)', 'rgba(201,150,69,0.10)', 'rgba(155,108,255,0.14)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          {/* Top specular highlight — fine 1px gradient that catches the eye */}
+          {/* Soft top inner highlight */}
           <LinearGradient
-            colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0)']}
+            colors={['rgba(255,235,200,0.20)', 'rgba(255,235,200,0)']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 0.45 }}
-            style={[StyleSheet.absoluteFill, { opacity: 0.55 }]}
+            end={{ x: 0, y: 0.55 }}
+            style={StyleSheet.absoluteFill}
           />
-          {/* Hairline border to define the edge */}
+          {/* Gold-tinted hairline border */}
           <View style={styles.primaryRing} pointerEvents="none" />
           {/* Content */}
           <View style={[styles.primaryContent, { paddingVertical: pad.v + 2, paddingHorizontal: pad.h + 4 }]}>
-            {content('#1A1305')}
+            {content(theme.colors.auraGoldLight)}
           </View>
         </Pressable>
       </Animated.View>
@@ -284,13 +282,13 @@ const styles = StyleSheet.create({
   },
   primaryBase: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F4C76B',
+    backgroundColor: 'rgba(10,8,14,0.92)',
   },
   primaryRing: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: theme.radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(244,199,107,0.45)',
   },
   primaryContent: {
     alignItems: 'center',

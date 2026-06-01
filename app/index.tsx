@@ -3,11 +3,7 @@ import { useEffect, useState } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PremiumButton } from '@/components/PremiumButton';
-import {
-  Eyebrow,
-  FadeUp,
-  Subtitle,
-} from '@/components/DisplayText';
+import { Eyebrow, Subtitle } from '@/components/DisplayText';
 import { HeroScanExperience } from '@/components/HeroScanExperience';
 import { APP_DISPLAY_NAME } from '@/constants/copy';
 import { theme } from '@/constants/theme';
@@ -48,23 +44,21 @@ export default function Hero() {
         </View>
       </FadeUp>
 
-      {/* Hero row */}
+      {/* Hero row — NO animation on the text. Static = guaranteed no ghosting. */}
       <View style={[styles.columns, wide && styles.columnsWide]}>
         <View style={[styles.left, wide && styles.leftWide]}>
-          <FadeUp delay={180}>
-            <Eyebrow>{HERO.eyebrow}</Eyebrow>
-            <View style={styles.titleMargin}>
-              <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
-                {HERO.titleLine1}
-              </Text>
-              <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
-                {HERO.titleLine2}
-              </Text>
-            </View>
-            <Subtitle style={styles.sub}>{HERO.sub}</Subtitle>
-          </FadeUp>
+          <Eyebrow>{HERO.eyebrow}</Eyebrow>
+          <View style={styles.titleBlock}>
+            <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
+              {HERO.titleLine1}
+            </Text>
+            <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
+              {HERO.titleLine2}
+            </Text>
+          </View>
+          <Subtitle style={styles.sub}>{HERO.sub}</Subtitle>
 
-          <FadeUp delay={360} style={[styles.ctaBlock, wide && styles.ctaBlockWide]}>
+          <View style={[styles.ctaBlock, wide && styles.ctaBlockWide]}>
             <PremiumButton
               label={HERO.primaryCta}
               onPress={() => router.push('/scan')}
@@ -77,27 +71,25 @@ export default function Hero() {
               variant="secondary"
               fullWidth={!wide}
             />
-          </FadeUp>
+          </View>
 
-          <FadeUp delay={480}>
-            <Text style={styles.trust}>{HERO.trust}</Text>
-          </FadeUp>
+          <Text style={styles.trust}>{HERO.trust}</Text>
         </View>
 
         {wide && (
-          <FadeUp delay={520} style={styles.right}>
+          <View style={styles.right}>
             <HeroScanExperience />
-          </FadeUp>
+          </View>
         )}
       </View>
 
-      <FadeUp delay={680} style={styles.footer}>
+      <View style={styles.footer}>
         <FooterLink label="Settings" to="/settings" />
         <Text style={styles.footerDot}>·</Text>
         <FooterLink label="Privacy" to="/privacy" />
         <Text style={styles.footerDot}>·</Text>
         <FooterLink label="Technology" to="/technology" />
-      </FadeUp>
+      </View>
     </ScreenContainer>
   );
 }
@@ -190,7 +182,7 @@ const styles = StyleSheet.create({
     fontFamily: theme.font.display,
     fontWeight: '300',
   },
-  titleMargin: { marginTop: 14 },
+  titleBlock: { marginTop: 14, gap: 0 },
   // Each title line is its own <Text> with explicit numeric lineHeight, so
   // react-native-web doesn't collapse them onto each other on web.
   titleWide: {

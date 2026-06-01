@@ -15,9 +15,10 @@ if (!existsSync(OUT)) mkdirSync(OUT, { recursive: true });
 console.log('AuraLens screenshot QA  →', OUT);
 
 const shots = [
-  { name: 'hero-desktop',       url: '/',         vp: { width: 1440, height: 900 }, wait: 2200 },
+  { name: 'hero-1728',          url: '/',         vp: { width: 1728, height: 768 }, wait: 2200 },
+  { name: 'hero-1440',          url: '/',         vp: { width: 1440, height: 900 }, wait: 2200 },
   { name: 'hero-mobile',        url: '/',         vp: { width: 390,  height: 844 }, wait: 2200 },
-  { name: 'pricing-desktop',    url: '/pricing',  vp: { width: 1440, height: 900 }, wait: 2000 },
+  { name: 'pricing-1440',       url: '/pricing',  vp: { width: 1440, height: 900 }, wait: 2000 },
   { name: 'pricing-mobile',     url: '/pricing',  vp: { width: 390,  height: 844 }, wait: 2000 },
   { name: 'auth-desktop',       url: '/auth',     vp: { width: 1440, height: 900 }, wait: 1600 },
   { name: 'scan-desktop',       url: '/scan',     vp: { width: 1440, height: 900 }, wait: 1600 },

@@ -1,11 +1,7 @@
-// Hero scan experience — replaces the previous "dashboard widget" preview
-// with a real cinematic product moment. A glass scanner device frame
-// containing a face landmark grid, three concentric breathing aura rings,
-// a vertical scan line, four floating micro labels, and ambient violet/
-// gold light blobs behind the frame.
-//
-// All web-safe: uses Animated for motion (native driver where supported)
-// and pure StyleSheet for layout. No new dependencies.
+// Hero scan experience — bounded glass scanner frame. Every visual element
+// (corners, status header, rings, scan line, micro labels, foot row) is
+// positioned INSIDE the frame. The outer wrapper has overflow: hidden so no
+// child can ever cross into the headline column.
 
 import { useEffect, useRef } from 'react';
 import {
@@ -19,60 +15,54 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/constants/theme';
 
-const FRAME_W = 380;
-const FRAME_H = 480;
+const FRAME_W = 400;
+const FRAME_H = 520;
 
 export function HeroScanExperience() {
   const breath = useRef(new Animated.Value(0)).current;
   const sweep = useRef(new Animated.Value(0)).current;
   const scan = useRef(new Animated.Value(0)).current;
-  const labelPulse = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Breathing rings — 4s in/out
     Animated.loop(
       Animated.sequence([
         Animated.timing(breath, { toValue: 1, duration: 3800, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
         Animated.timing(breath, { toValue: 0, duration: 3800, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
       ]),
     ).start();
-    // Sweep dot — full rotation every 6s
     Animated.loop(
       Animated.timing(sweep, { toValue: 1, duration: 6000, easing: Easing.linear, useNativeDriver: Platform.OS !== 'web' }),
     ).start();
-    // Vertical scan line — down then back up
     Animated.loop(
       Animated.sequence([
         Animated.timing(scan, { toValue: 1, duration: 3200, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
         Animated.timing(scan, { toValue: 0, duration: 3200, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
       ]),
     ).start();
-    // Label pulse — synced status dot
     Animated.loop(
       Animated.sequence([
-        Animated.timing(labelPulse, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(labelPulse, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulse, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(pulse, { toValue: 0, duration: 1400, easing: Easing.inOut(Easing.quad), useNativeDriver: Platform.OS !== 'web' }),
       ]),
     ).start();
-  }, [breath, sweep, scan, labelPulse]);
+  }, [breath, sweep, scan, pulse]);
 
   const ringScale = breath.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.05] });
   const ringOpacity = breath.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.85] });
   const sweepRot = sweep.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const scanY = scan.interpolate({ inputRange: [0, 1], outputRange: [44, FRAME_H - 60] });
-  const labelDotOp = labelPulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
+  const scanY = scan.interpolate({ inputRange: [0, 1], outputRange: [44, FRAME_H - 80] });
+  const dotOp = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
 
   return (
-    <View style={styles.outerSlot}>
-      {/* Ambient violet glow blob behind frame */}
-      <View pointerEvents="none" style={[styles.glowBlob, styles.glowViolet]} />
-      {/* Ambient gold glow blob */}
-      <View pointerEvents="none" style={[styles.glowBlob, styles.glowGold]} />
+    <View style={styles.outer}>
+      {/* Ambient violet & gold blobs — sit BEHIND the frame, but constrained by outer overflow */}
+      <View pointerEvents="none" style={[styles.blob, styles.blobViolet]} />
+      <View pointerEvents="none" style={[styles.blob, styles.blobGold]} />
 
-      {/* The scanner device frame */}
       <View style={styles.frame}>
         <LinearGradient
-          colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.02)']}
+          colors={['rgba(255,255,255,0.07)', 'rgba(255,255,255,0.015)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0.8, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -83,27 +73,26 @@ export function HeroScanExperience() {
         <View style={[styles.corner, styles.cornerBL]} />
         <View style={[styles.corner, styles.cornerBR]} />
 
-        {/* Top label */}
-        <View style={styles.frameLabel}>
-          <Animated.View style={[styles.statusDot, { opacity: labelDotOp }]} />
-          <Text style={styles.frameLabelText}>READING ENGINE · ACTIVE</Text>
+        {/* Status header */}
+        <View style={styles.header}>
+          <Animated.View style={[styles.statusDot, { opacity: dotOp }]} />
+          <Text style={styles.headerText}>READING ENGINE · ACTIVE</Text>
         </View>
 
-        {/* Centre stage with face silhouette + rings */}
-        <View style={styles.centreStage} pointerEvents="none">
-          {/* Three concentric rings */}
-          {[1.0, 1.32, 1.72].map((m, i) => (
+        {/* Centre stage */}
+        <View style={styles.stage} pointerEvents="none">
+          {[1.0, 1.32, 1.7].map((m, i) => (
             <Animated.View
               key={i}
               style={[
                 styles.ring,
                 {
-                  width: 180 * m,
-                  height: 180 * m,
+                  width: 170 * m,
+                  height: 170 * m,
                   borderColor:
-                    i === 0 ? 'rgba(244,199,107,0.65)' :
-                    i === 1 ? 'rgba(155,108,255,0.40)' :
-                              'rgba(91,91,214,0.25)',
+                    i === 0 ? 'rgba(244,199,107,0.62)' :
+                    i === 1 ? 'rgba(155,108,255,0.36)' :
+                              'rgba(91,91,214,0.22)',
                   transform: [{ scale: ringScale }],
                   opacity: ringOpacity,
                 },
@@ -111,30 +100,26 @@ export function HeroScanExperience() {
             />
           ))}
 
-          {/* Rotating gold sweep dot on outer ring */}
           <Animated.View style={[styles.sweepHost, { transform: [{ rotate: sweepRot }] }]}>
             <View style={styles.sweepDot} />
           </Animated.View>
 
-          {/* Face silhouette — abstract landmark grid */}
+          {/* Face landmark map — bounded 160×160 */}
           <View style={styles.face}>
-            {/* Forehead, brow, eyes, nose, mouth — represented as glowing dots */}
-            <View style={[styles.landmark, { top: 22, left: 60 }]} />
-            <View style={[styles.landmark, { top: 22, right: 60 }]} />
-            <View style={[styles.landmark, { top: 46, left: 76 }]} />
-            <View style={[styles.landmark, { top: 46, right: 76 }]} />
-            <View style={[styles.landmark, { top: 80, left: '50%', marginLeft: -3 }]} />
-            <View style={[styles.landmark, { top: 110, left: '50%', marginLeft: -3 }]} />
-            {/* Mouth */}
-            <View style={[styles.landmarkSoft, { top: 140, left: 56 }]} />
-            <View style={[styles.landmarkSoft, { top: 140, right: 56 }]} />
-
-            {/* Connecting lines — subtle hairlines */}
-            <View style={[styles.gridLine, { top: 33, left: 60, width: 100 }]} />
-            <View style={[styles.gridLine, { top: 113, left: 56, width: 108 }]} />
+            <View style={[styles.lm, { top: 28, left: 50 }]} />
+            <View style={[styles.lm, { top: 28, right: 50 }]} />
+            <View style={[styles.lm, { top: 48, left: 64 }]} />
+            <View style={[styles.lm, { top: 48, right: 64 }]} />
+            <View style={[styles.lm, { top: 80, left: '50%', marginLeft: -3 }]} />
+            <View style={[styles.lm, { top: 108, left: '50%', marginLeft: -3 }]} />
+            <View style={[styles.lmSoft, { top: 132, left: 48 }]} />
+            <View style={[styles.lmSoft, { top: 132, right: 48 }]} />
+            <View style={[styles.gridLine, { top: 33, left: 52, width: 56 }]} />
+            <View style={[styles.gridLine, { top: 33, right: 52, width: 56 }]} />
+            <View style={[styles.gridLine, { top: 104, left: 50, width: 60 }]} />
           </View>
 
-          {/* Vertical scan line crossing the face */}
+          {/* Vertical scan line — bounded inside stage */}
           <Animated.View style={[styles.scanLine, { transform: [{ translateY: scanY }] }]}>
             <LinearGradient
               colors={['rgba(244,199,107,0)', 'rgba(244,199,107,0.85)', 'rgba(244,199,107,0)']}
@@ -144,59 +129,52 @@ export function HeroScanExperience() {
           </Animated.View>
         </View>
 
-        {/* Bottom status row */}
-        <View style={styles.frameFoot}>
+        {/* Foot row INSIDE frame, position absolute bottom */}
+        <View style={styles.foot}>
           <View style={styles.footPill}><Text style={styles.footPillText}>76</Text></View>
           <Text style={styles.footLabel}>AURA SIGNAL</Text>
-          <View style={styles.spacer} />
+          <View style={styles.flex} />
           <Text style={styles.footLabel}>PRIVATE</Text>
         </View>
-      </View>
 
-      {/* Floating micro-labels around the frame */}
-      <View style={[styles.microLabel, styles.microTopRight]}>
-        <View style={styles.microDot} />
-        <Text style={styles.microText}>Symbolic face map</Text>
-      </View>
-      <View style={[styles.microLabel, styles.microLeftMid]}>
-        <View style={styles.microDot} />
-        <Text style={styles.microText}>Visual energy profile</Text>
-      </View>
-      <View style={[styles.microLabel, styles.microRightBot]}>
-        <View style={styles.microDot} />
-        <Text style={styles.microText}>Private reflection</Text>
+        {/* Inline micro-labels — INSIDE the frame, at safe corners */}
+        <View style={[styles.tag, styles.tagTopRight]}>
+          <View style={styles.tagDot} />
+          <Text style={styles.tagText}>Visual energy profile</Text>
+        </View>
+        <View style={[styles.tag, styles.tagMidLeft]}>
+          <View style={styles.tagDot} />
+          <Text style={styles.tagText}>Symbolic face map</Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outerSlot: {
-    width: FRAME_W + 80,
-    height: FRAME_H + 60,
+  outer: {
+    width: FRAME_W + 40,
+    height: FRAME_H + 40,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    overflow: 'hidden',
   },
-  glowBlob: {
+
+  blob: {
     position: 'absolute',
     borderRadius: 999,
-    // @ts-expect-error web-only blur for the ambient bloom behind the frame
+    // @ts-expect-error web-only blur for ambient bloom
     filter: 'blur(80px)',
   },
-  glowViolet: {
-    width: 340,
-    height: 340,
-    backgroundColor: 'rgba(155,108,255,0.30)',
-    top: -10,
-    left: -30,
+  blobViolet: {
+    width: 320, height: 320,
+    backgroundColor: 'rgba(155,108,255,0.28)',
+    top: -10, left: -20,
   },
-  glowGold: {
-    width: 240,
-    height: 240,
-    backgroundColor: 'rgba(244,199,107,0.22)',
-    bottom: 0,
-    right: -20,
+  blobGold: {
+    width: 220, height: 220,
+    backgroundColor: 'rgba(244,199,107,0.20)',
+    bottom: -20, right: -20,
   },
 
   frame: {
@@ -204,10 +182,10 @@ const styles = StyleSheet.create({
     height: FRAME_H,
     borderRadius: 28,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(244,199,107,0.22)',
-    backgroundColor: 'rgba(8,8,14,0.72)',
+    borderColor: 'rgba(244,199,107,0.24)',
+    backgroundColor: 'rgba(8,8,14,0.74)',
     overflow: 'hidden',
-    padding: 22,
+    padding: 20,
     shadowColor: '#000',
     shadowOpacity: 0.55,
     shadowRadius: 40,
@@ -216,8 +194,7 @@ const styles = StyleSheet.create({
   },
 
   corner: {
-    position: 'absolute',
-    width: 22, height: 22,
+    position: 'absolute', width: 22, height: 22,
     borderColor: theme.colors.auraGold,
   },
   cornerTL: { top: 14, left: 14, borderTopWidth: 2, borderLeftWidth: 2, borderTopLeftRadius: 6 },
@@ -225,7 +202,7 @@ const styles = StyleSheet.create({
   cornerBL: { bottom: 14, left: 14, borderBottomWidth: 2, borderLeftWidth: 2, borderBottomLeftRadius: 6 },
   cornerBR: { bottom: 14, right: 14, borderBottomWidth: 2, borderRightWidth: 2, borderBottomRightRadius: 6 },
 
-  frameLabel: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -238,7 +215,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 8,
   },
-  frameLabelText: {
+  headerText: {
     color: theme.colors.auraGold,
     fontSize: 10,
     letterSpacing: 2.4,
@@ -246,9 +223,9 @@ const styles = StyleSheet.create({
     fontFamily: theme.font.body,
   },
 
-  centreStage: {
+  stage: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 60,
+    top: 0, left: 0, right: 0, bottom: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -259,7 +236,7 @@ const styles = StyleSheet.create({
   },
   sweepHost: {
     position: 'absolute',
-    width: 310, height: 310,
+    width: 290, height: 290,
     alignItems: 'center',
   },
   sweepDot: {
@@ -271,51 +248,45 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.95,
     shadowRadius: 10,
   },
-
   face: {
-    width: 180,
-    height: 180,
+    width: 160, height: 160,
     position: 'relative',
   },
-  landmark: {
+  lm: {
     position: 'absolute',
     width: 6, height: 6, borderRadius: 6,
     backgroundColor: theme.colors.auraGoldLight,
     shadowColor: theme.colors.auraGold,
-    shadowOpacity: 1,
-    shadowRadius: 6,
+    shadowOpacity: 1, shadowRadius: 6,
   },
-  landmarkSoft: {
+  lmSoft: {
     position: 'absolute',
     width: 5, height: 5, borderRadius: 5,
     backgroundColor: 'rgba(155,108,255,0.85)',
     shadowColor: '#9B6CFF',
-    shadowOpacity: 0.95,
-    shadowRadius: 6,
+    shadowOpacity: 0.95, shadowRadius: 6,
   },
   gridLine: {
     position: 'absolute',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(244,199,107,0.25)',
+    backgroundColor: 'rgba(244,199,107,0.28)',
   },
-
   scanLine: {
     position: 'absolute',
-    left: 8, right: 8,
+    left: 16, right: 16,
     height: 2,
     borderRadius: 2,
   },
 
-  frameFoot: {
+  foot: {
     position: 'absolute',
-    left: 22, right: 22, bottom: 22,
+    left: 20, right: 20, bottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
   footPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 10, paddingVertical: 4,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(244,199,107,0.5)',
@@ -333,32 +304,31 @@ const styles = StyleSheet.create({
     letterSpacing: 1.8,
     fontFamily: theme.font.body,
   },
-  spacer: { flex: 1 },
+  flex: { flex: 1 },
 
-  // Floating micro-labels
-  microLabel: {
+  // Inline tags — sit just inside the frame, never outside
+  tag: {
     position: 'absolute',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: 'rgba(8,8,14,0.85)',
+    backgroundColor: 'rgba(8,8,14,0.92)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(244,199,107,0.22)',
+    borderColor: 'rgba(244,199,107,0.20)',
   },
-  microDot: {
-    width: 5, height: 5, borderRadius: 5,
+  tagDot: {
+    width: 4, height: 4, borderRadius: 4,
     backgroundColor: theme.colors.auraGold,
   },
-  microText: {
+  tagText: {
     color: theme.colors.softWhite,
     fontSize: 10,
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     fontFamily: theme.font.body,
   },
-  microTopRight: { top: 6, right: 0 },
-  microLeftMid:  { top: '38%', left: 0 },
-  microRightBot: { bottom: 22, right: 6 },
+  tagTopRight: { top: 70, right: 18 },
+  tagMidLeft:  { top: '46%', left: 18 },
 });
