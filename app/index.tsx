@@ -23,10 +23,16 @@ const HERO = {
   trust: 'For reflection and wellbeing only. Not medical or diagnostic advice.',
 };
 
-// Clamp-style responsive size on web.
+// Clamp-style responsive size on web. lineHeight is kept ≥ 1.02 so lines
+// don't collapse onto each other on react-native-web (which treats
+// fractional <1 values as a unitless multiplier).
 const heroTitleStyle = Platform.select({
-  web: { fontSize: 'clamp(48px, 6.4vw, 104px)' as any, lineHeight: 0.94 as any, letterSpacing: -0.05 as any },
-  default: { fontSize: 56, lineHeight: 60, letterSpacing: -1.2 },
+  web: {
+    fontSize: 'clamp(44px, 5.8vw, 88px)' as any,
+    lineHeight: 1.02 as any,
+    letterSpacing: -0.04 as any,
+  },
+  default: { fontSize: 56, lineHeight: 62, letterSpacing: -1.2 },
 });
 
 export default function Hero() {
