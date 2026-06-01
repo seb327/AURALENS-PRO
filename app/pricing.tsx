@@ -19,7 +19,6 @@ export default function Pricing() {
   });
   const purchase = useEntitlementStore((s) => s.purchase);
   const restore = useEntitlementStore((s) => s.restore);
-  const isConfigured = useEntitlementStore((s) => s.isConfigured);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,12 +135,6 @@ export default function Pricing() {
         variant="ghost"
         disabled={busy === 'restore'}
       />
-
-      {!isConfigured && (
-        <Text style={styles.devNote}>
-          Dev build: RevenueCat is not configured, so purchases are simulated locally. Add your API keys to use real billing.
-        </Text>
-      )}
 
       <Text style={styles.foot}>{copy.disclaimers.short}</Text>
     </ScreenContainer>

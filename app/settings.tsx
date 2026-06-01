@@ -1,4 +1,3 @@
-import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Linking, Platform, StyleSheet, Switch, Text, View } from 'react-native';
@@ -11,9 +10,6 @@ import { useEntitlementStore } from '@/store/useEntitlementStore';
 import { useReadingStore } from '@/store/useReadingStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBuddyStore } from '@/store/useBuddyStore';
-import { DevTestPanel } from '@/components/DevTestPanel';
-
-const IS_DEV = __DEV__;
 
 const MANAGE_URL: Record<string, string> = {
   ios: 'https://apps.apple.com/account/subscriptions',
@@ -28,7 +24,6 @@ export default function Settings() {
 
   const [restoring, setRestoring] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [devOpen, setDevOpen] = useState(false);
 
   async function doRestore() {
     setRestoring(true);
@@ -100,14 +95,11 @@ export default function Settings() {
       </View>
       <Text style={styles.title}>Settings</Text>
 
-      <DevTestPanel defaultOpen />
-
       <GlassCard strong>
         <Row k="App" v={APP_DISPLAY_NAME} />
         <Row k="Plan" v={ent.hasMonthly ? 'Monthly' : ent.readingCredits > 0 ? 'Single readings' : 'No active plan'} />
         <Row k="Reading credits" v={String(ent.readingCredits)} />
         <Row k="Saved readings" v={String(readings.readings.length)} />
-        <Row k="Billing configured" v={ent.isConfigured ? 'Yes' : 'No (local dev)'} />
       </GlassCard>
 
       <GlassCard>
@@ -195,47 +187,6 @@ export default function Settings() {
         <View style={{ height: 8 }} />
         <PremiumButton label="Delete My Data" onPress={() => router.push('/delete-data')} variant="ghost" />
       </GlassCard>
-
-      {IS_DEV && (() => {
-        const lastBuddyMsg = [...buddy.messages].reverse().find((m) => m.role === 'buddy');
-        const buddyMode =
-          lastBuddyMsg?.source === 'remote' ? 'LIVE (edge function)' :
-          lastBuddyMsg?.source === 'fallback' ? 'FALLBACK (local)' :
-          auth.isConfigured && auth.isAuthenticated ? 'SERVER-READY' :
-          'FALLBACK (no Supabase or not signed in)';
-        const channel = (Constants.expoConfig as any)?.extra?.eas?.channel
-          ?? (Constants.expoConfig as any)?.updates?.channel
-          ?? 'unknown';
-        return (
-          <GlassCard>
-            <PremiumButton
-              label={devOpen ? '▾ Integrations (dev)' : '▸ Integrations (dev)'}
-              onPress={() => setDevOpen((o) => !o)}
-              variant="subtle"
-            />
-            {devOpen && (
-              <View style={{ marginTop: 12 }}>
-                <Row k="Supabase" v={auth.isConfigured ? 'Configured' : 'Not configured (local-first)'} />
-                <Row k="Auth" v={auth.isAuthenticated ? `Signed in (${auth.session?.user.email ?? auth.session?.user.id})` : 'Anonymous'} />
-                <Row k="Cloud sync" v={auth.cloudSyncEnabled ? 'On' : 'Off'} />
-                <Row k="Photo upload" v={auth.photoUploadConsent ? 'On' : 'Off'} />
-                <Row k="RevenueCat" v={ent.isConfigured ? 'Configured (live SDK)' : 'Not configured (mock)'} />
-                <Row k="Monthly entitlement" v={ent.hasMonthly ? 'Active' : 'Inactive'} />
-                <Row k="Reading credits" v={String(ent.readingCredits)} />
-                <Row k="Aura Buddy" v={buddyMode} />
-                <Row k="Last sync" v={ent.lastSyncedAt ? new Date(ent.lastSyncedAt).toLocaleTimeString() : '—'} />
-                <Row k="Build profile" v={`__DEV__=${__DEV__} channel=${channel}`} />
-                <Row k="Customer ID" v={ent.customerId ?? '—'} />
-                <Row k="Active product IDs" v={ent.activeProductIds.join(', ') || '—'} />
-                <Row k="Device ID" v={readings.deviceId} />
-                <Row k="Expo version" v={Constants.expoConfig?.version ?? '—'} />
-                {ent.error && <Row k="Last billing error" v={ent.error} />}
-                {auth.error && <Row k="Last auth error" v={auth.error} />}
-              </View>
-            )}
-          </GlassCard>
-        );
-      })()}
 
       <Text style={styles.foot}>
         This reading is for reflection, spiritual entertainment, and wellbeing guidance only. It is not medical, psychological, or diagnostic advice.

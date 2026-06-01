@@ -1,8 +1,7 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PremiumButton } from '@/components/PremiumButton';
-import { DevTestPanel } from '@/components/DevTestPanel';
 import { APP_DISPLAY_NAME, copy } from '@/constants/copy';
 import { theme } from '@/constants/theme';
 
@@ -22,11 +21,31 @@ export default function Hero() {
 
       <View style={styles.ctaBlock}>
         <PremiumButton label={copy.hero.cta} onPress={() => router.push('/technology')} />
+        <PremiumButton label="See pricing" onPress={() => router.push('/pricing')} variant="ghost" />
         <Text style={styles.trust}>{copy.hero.trust}</Text>
       </View>
 
-      <DevTestPanel defaultOpen />
+      <View style={styles.footer}>
+        <FooterLink label="Sign in" to="/auth" />
+        <Text style={styles.footerDot}>·</Text>
+        <FooterLink label="Settings" to="/settings" />
+        <Text style={styles.footerDot}>·</Text>
+        <FooterLink label="Privacy" to="/privacy" />
+      </View>
     </ScreenContainer>
+  );
+}
+
+function FooterLink({ label, to }: { label: string; to: string }) {
+  return (
+    <Pressable
+      onPress={() => router.push(to as any)}
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      hitSlop={10}
+    >
+      <Text style={styles.footerLink}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -73,7 +92,7 @@ const styles = StyleSheet.create({
   },
   ctaBlock: {
     marginTop: theme.spacing.xxxl + 24,
-    gap: 14,
+    gap: 12,
   },
   trust: {
     color: theme.colors.dim,
@@ -81,5 +100,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     letterSpacing: 0.4,
+    marginTop: 4,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: theme.spacing.xxxl,
+    paddingBottom: 8,
+  },
+  footerLink: {
+    color: theme.colors.mute,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  footerDot: {
+    color: theme.colors.dim,
+    fontSize: 12,
   },
 });

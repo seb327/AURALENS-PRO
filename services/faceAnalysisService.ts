@@ -270,14 +270,19 @@ const heuristicFaceAnalyzer: FaceAnalyzer = {
   kind: 'heuristic',
   async isAvailable() { return true; },
   async analyzeImage(uri) {
-    let width = 0;
-    let height = 0;
+    // Try to read image metadata, but never fail outright — on web some URI
+    // shapes (blob:, data:) can't be sized by expo-image-manipulator. We fall
+    // back to plausible defaults so a reading still happens.
+    let width = 1080;
+    let height = 1440;
     try {
       const meta = await ImageManipulator.manipulateAsync(uri, [], { base64: false });
-      width = meta.width;
-      height = meta.height;
+      if (meta.width > 0 && meta.height > 0) {
+        width = meta.width;
+        height = meta.height;
+      }
     } catch {
-      return makeUnsupportedResult('heuristic', uri, 'unsupported-device');
+      // keep the defaults — continue with the rest of the pipeline
     }
 
     const [brightness, detail, hash] = await Promise.all([
