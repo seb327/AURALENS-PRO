@@ -185,14 +185,14 @@ const styles = StyleSheet.create({
   },
   titleBlock: { marginTop: 14, gap: 0 },
   titleWide: {
-    fontSize: 64,
-    lineHeight: 68,
-    letterSpacing: -2.4,
+    fontSize: 56,
+    lineHeight: 60,
+    letterSpacing: -2.0,
   },
   titleNarrow: {
-    fontSize: 48,
-    lineHeight: 52,
-    letterSpacing: -1.6,
+    fontSize: 44,
+    lineHeight: 48,
+    letterSpacing: -1.4,
   },
   sub: {
     marginTop: 22,

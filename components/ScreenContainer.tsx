@@ -39,7 +39,7 @@ export function ScreenContainer({
           On native this is fully opaque — the shader doesn't run there. */}
       <LinearGradient
         colors={IS_WEB
-          ? ['rgba(5,5,7,0.55)', 'rgba(10,10,18,0.62)', 'rgba(5,5,7,0.78)']
+          ? ['rgba(5,5,7,0.18)', 'rgba(10,10,18,0.10)', 'rgba(5,5,7,0.42)']
           : ['#050507', '#0A0A12', '#050507']}
         style={StyleSheet.absoluteFill}
       />
