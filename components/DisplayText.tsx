@@ -116,22 +116,22 @@ const styles = StyleSheet.create({
   titleBase: {
     color: theme.colors.softWhite,
     fontFamily: theme.font.display,
-    fontWeight: '300',
+    fontWeight: '800',
   },
   hero: {
-    fontSize: 56,
-    lineHeight: 60,
-    letterSpacing: -1.2,
+    fontSize: 64,
+    lineHeight: 68,
+    letterSpacing: -2.4,
   },
   page: {
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: -0.6,
+    fontSize: 40,
+    lineHeight: 44,
+    letterSpacing: -1.4,
   },
   card: {
-    fontSize: 22,
+    fontSize: 24,
     lineHeight: 28,
-    letterSpacing: -0.2,
+    letterSpacing: -0.6,
   },
   subtitle: {
     color: theme.colors.mute,

@@ -49,142 +49,124 @@ uniform vec2 u_resolution;
 uniform float u_time;
 uniform vec2 u_mouse;
 uniform float u_dpr;
-uniform float u_scroll;      // smoothed cumulative scroll position (pixels)
-uniform float u_velocity;    // smoothed scroll/swipe velocity (-1..1)
-uniform float u_energy;      // 0..1 pulse triggered by user actions
+uniform float u_scroll;
+uniform float u_velocity;
+uniform float u_energy;
 
 out vec4 fragColor;
 
-// Hash & noise -----------------------------------------------------------------
-vec3 hash3(vec3 p) {
-  p = vec3(
-    dot(p, vec3(127.1, 311.7, 74.7)),
-    dot(p, vec3(269.5, 183.3, 246.1)),
-    dot(p, vec3(113.5, 271.9, 124.6))
-  );
-  return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+// ─── AuraLens plasma grid ────────────────────────────────────────────────
+// Adapted from the user-supplied violet plasma grid pattern. Domain-warped
+// grid + N animated plasma lines, layered over a violet/indigo gradient.
+// Aura-palette tweaks: line colour leans violet→gold, with mouse lobe and
+// energy pulse modulating brightness.
+
+const float overallSpeed = 0.18;
+const float gridSmoothWidth = 0.015;
+const float axisWidth = 0.04;
+const float majorLineWidth = 0.022;
+const float minorLineWidth = 0.011;
+const float majorLineFrequency = 5.0;
+const float minorLineFrequency = 1.0;
+const float scale = 5.0;
+const float minLineWidth = 0.01;
+const float maxLineWidth = 0.20;
+const float lineAmplitude = 1.0;
+const float lineFrequency = 0.2;
+const float warpFrequency = 0.5;
+const float warpAmplitude = 1.0;
+const float offsetFrequency = 0.5;
+const float minOffsetSpread = 0.6;
+const float maxOffsetSpread = 2.0;
+const int linesPerGroup = 16;
+
+#define drawCircle(pos, r, c) smoothstep(r + gridSmoothWidth, r, length(c - (pos)))
+#define drawSmoothLine(pos, hw, t) smoothstep(hw, 0.0, abs(pos - (t)))
+#define drawCrispLine(pos, hw, t) smoothstep(hw + gridSmoothWidth, hw, abs(pos - (t)))
+#define drawPeriodicLine(freq, w, t) drawCrispLine(freq / 2.0, w, abs(mod(t, freq) - (freq) / 2.0))
+
+float drawGridLines(float axis) {
+  return drawCrispLine(0.0, axisWidth, axis)
+        + drawPeriodicLine(majorLineFrequency, majorLineWidth, axis)
+        + drawPeriodicLine(minorLineFrequency, minorLineWidth, axis);
+}
+float drawGrid(vec2 space) { return min(1.0, drawGridLines(space.x) + drawGridLines(space.y)); }
+
+float rnd(float t) {
+  return (cos(t) + cos(t * 1.3 + 1.3) + cos(t * 1.4 + 1.4)) / 3.0;
 }
 
-// Simplex-ish gradient noise (cheap, smooth)
-float noise(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  vec3 u = f * f * (3.0 - 2.0 * f);
-
-  float n000 = dot(hash3(i + vec3(0,0,0)), f - vec3(0,0,0));
-  float n100 = dot(hash3(i + vec3(1,0,0)), f - vec3(1,0,0));
-  float n010 = dot(hash3(i + vec3(0,1,0)), f - vec3(0,1,0));
-  float n110 = dot(hash3(i + vec3(1,1,0)), f - vec3(1,1,0));
-  float n001 = dot(hash3(i + vec3(0,0,1)), f - vec3(0,0,1));
-  float n101 = dot(hash3(i + vec3(1,0,1)), f - vec3(1,0,1));
-  float n011 = dot(hash3(i + vec3(0,1,1)), f - vec3(0,1,1));
-  float n111 = dot(hash3(i + vec3(1,1,1)), f - vec3(1,1,1));
-
-  return mix(
-    mix(mix(n000, n100, u.x), mix(n010, n110, u.x), u.y),
-    mix(mix(n001, n101, u.x), mix(n011, n111, u.x), u.y),
-    u.z
-  );
-}
-
-float fbm(vec3 p) {
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 4; i++) {
-    v += a * noise(p);
-    p *= 2.05;
-    a *= 0.5;
-  }
-  return v;
-}
-
-// Domain-warped FBM — gives the organic flowing aura look
-float aura(vec3 p) {
-  vec3 q = vec3(
-    fbm(p + vec3(0.0, 0.0, 0.0)),
-    fbm(p + vec3(5.2, 1.3, 0.0)),
-    fbm(p + vec3(2.4, 4.7, 0.0))
-  );
-  vec3 r = vec3(
-    fbm(p + 2.0 * q + vec3(1.7, 9.2, 0.0)),
-    fbm(p + 2.0 * q + vec3(8.3, 2.8, 0.0)),
-    fbm(p + 2.0 * q + vec3(3.1, 6.5, 0.0))
-  );
-  return fbm(p + 4.0 * r);
-}
-
-// Aura palette: deep obsidian → indigo → violet → warm gold core
-vec3 palette(float t) {
-  vec3 c0 = vec3(0.020, 0.020, 0.027); // near-black obsidian
-  vec3 c1 = vec3(0.090, 0.060, 0.180); // deep indigo
-  vec3 c2 = vec3(0.300, 0.180, 0.480); // violet
-  vec3 c3 = vec3(0.720, 0.470, 0.620); // dusty rose-violet
-  vec3 c4 = vec3(0.960, 0.780, 0.420); // warm gold core
-  vec3 c5 = vec3(0.984, 0.890, 0.635); // gold highlight
-
-  t = clamp(t, 0.0, 1.0);
-  if (t < 0.20) return mix(c0, c1, t / 0.20);
-  if (t < 0.45) return mix(c1, c2, (t - 0.20) / 0.25);
-  if (t < 0.70) return mix(c2, c3, (t - 0.45) / 0.25);
-  if (t < 0.90) return mix(c3, c4, (t - 0.70) / 0.20);
-  return mix(c4, c5, (t - 0.90) / 0.10);
-}
-
-// Grain ------------------------------------------------------------------------
-float grain(vec2 uv, float t) {
-  return fract(sin(dot(uv * 1024.0, vec2(12.9898, 78.233)) + t) * 43758.5453);
+float getPlasmaY(float x, float fade, float offset, float lineSpeed) {
+  return rnd(x * lineFrequency + u_time * lineSpeed) * fade * lineAmplitude + offset;
 }
 
 void main() {
+  vec2 fragCoord = gl_FragCoord.xy;
   vec2 res = u_resolution;
-  vec2 uv = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
-  vec2 mouse = (u_mouse - 0.5 * res) / min(res.x, res.y);
+  vec2 uv = fragCoord.xy / res.xy;
+  vec2 space = (fragCoord - res.xy / 2.0) / res.x * 2.0 * scale;
 
-  // Scroll/swipe deforms UV vertically with a sheared streak — feels like
-  // the aura field has inertia. velocity also accelerates time so the
-  // noise visibly flows during gestures, then decays back.
-  float vel = u_velocity;
-  float velAbs = abs(vel);
-  uv.y += vel * 0.18;
-  uv.x += vel * 0.05 * sin(uv.y * 3.0 + u_time * 0.6);
+  // Velocity-coupled line speed — gestures speed the plasma up
+  float velAbs = abs(u_velocity);
+  float lineSpeed  = (1.0  + velAbs * 2.5) * overallSpeed;
+  float warpSpeed  = (0.2  + velAbs * 0.8) * overallSpeed;
+  float offsetSpeed = (1.33 + velAbs * 1.5) * overallSpeed;
 
-  float t = u_time * 0.05 + u_scroll * 0.00015 + velAbs * 0.4;
+  float horizontalFade = 1.0 - (cos(uv.x * 6.28) * 0.5 + 0.5);
+  float verticalFade   = 1.0 - (cos(uv.y * 6.28) * 0.5 + 0.5);
 
-  // Aura field
-  vec3 p = vec3(uv * 1.4, t);
-  float a = aura(p);
-  a = 0.5 + 0.5 * a;
+  space.y += rnd(space.x * warpFrequency + u_time * warpSpeed) * warpAmplitude * (0.5 + horizontalFade);
+  space.x += rnd(space.y * warpFrequency + u_time * warpSpeed + 2.0) * warpAmplitude * horizontalFade;
 
-  // Pointer light lobe
-  float md = length(uv - mouse * 0.92);
-  float mouseLight = exp(-md * 2.2) * 0.30;
-  a = a + mouseLight;
+  vec4 lines = vec4(0.0);
+  vec4 bgColor1 = vec4(0.052, 0.040, 0.130, 1.0);  // deep indigo (AuraLens)
+  vec4 bgColor2 = vec4(0.180, 0.090, 0.330, 1.0);  // violet
+  // Line colour shifts gold under fast motion / energy bloom; otherwise violet
+  vec4 lineColor = vec4(
+    mix(0.40, 0.92, velAbs + u_energy * 0.5),
+    mix(0.22, 0.66, velAbs + u_energy * 0.5),
+    mix(0.84, 0.30, velAbs + u_energy * 0.5),
+    1.0
+  );
 
-  // Energy pulse — bright bloom on press / phase change / result reveal
-  float pulse = u_energy;
-  a += pulse * (0.35 * exp(-length(uv) * 1.4));
+  for (int l = 0; l < linesPerGroup; l++) {
+    float normalizedLineIndex = float(l) / float(linesPerGroup);
+    float offsetTime = u_time * offsetSpeed;
+    float offsetPosition = float(l) + space.x * offsetFrequency;
+    float rand = rnd(offsetPosition + offsetTime) * 0.5 + 0.5;
+    float halfWidth = mix(minLineWidth, maxLineWidth, rand * horizontalFade) / 2.0;
+    float offset = rnd(offsetPosition + offsetTime * (1.0 + normalizedLineIndex)) * mix(minOffsetSpread, maxOffsetSpread, horizontalFade);
+    float linePosition = getPlasmaY(space.x, horizontalFade, offset, lineSpeed);
+    float line = drawSmoothLine(linePosition, halfWidth, space.y) / 2.0
+               + drawCrispLine(linePosition, halfWidth * 0.15, space.y);
 
-  // Velocity-driven warmth — the aura "glows brighter" during fast motion
-  a += velAbs * 0.22;
+    float circleX = mod(float(l) + u_time * lineSpeed, 25.0) - 12.0;
+    vec2 circlePosition = vec2(circleX, getPlasmaY(circleX, horizontalFade, offset, lineSpeed));
+    float circle = drawCircle(circlePosition, 0.01, space) * 4.0;
 
-  // Vertical balance
-  a *= mix(0.85, 1.05, smoothstep(-0.6, 0.4, uv.y));
+    line = line + circle;
+    lines += line * lineColor * rand;
+  }
 
-  vec3 col = palette(a);
+  vec4 col = mix(bgColor1, bgColor2, uv.x);
+  col *= verticalFade;
+  col.a = 1.0;
+  col += lines;
 
-  // Vignette
-  float vign = smoothstep(1.05, 0.20, length(uv));
-  col *= mix(0.62, 1.0, vign);
+  // Pointer light lobe — soft warmth following the cursor
+  vec2 mouseUV = u_mouse / res.xy;
+  float md = length(uv - mouseUV);
+  col.rgb += vec3(0.95, 0.78, 0.42) * exp(-md * 5.0) * 0.18;
 
-  // Cool shadow lift
-  col += vec3(0.012, 0.018, 0.040) * (1.0 - vign);
+  // Energy pulse — radial bloom on user action
+  vec2 centred = uv - vec2(0.5);
+  col.rgb += vec3(0.98, 0.85, 0.55) * u_energy * exp(-length(centred) * 1.8) * 0.35;
 
-  // Film grain
-  float g = grain(uv, u_time);
-  col += (g - 0.5) * 0.045;
+  // Gentle vignette
+  float vign = smoothstep(1.10, 0.30, length(centred));
+  col.rgb *= mix(0.68, 1.0, vign);
 
-  col = pow(col, vec3(0.96));
-  fragColor = vec4(col, 1.0);
+  fragColor = col;
 }
 `;
 
@@ -218,7 +200,7 @@ export function AuraShaderBackground() {
     // Inject premium typography (Inter + Fraunces display) on web.
     // Done in JS so we don't need to override expo's index.html template.
     const FONT_HREF =
-      'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap';
+      'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap';
     if (!document.querySelector(`link[data-auralens-fonts]`)) {
       const pre1 = document.createElement('link');
       pre1.rel = 'preconnect';

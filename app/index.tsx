@@ -178,20 +178,21 @@ const styles = StyleSheet.create({
   titleBase: {
     color: theme.colors.softWhite,
     fontFamily: theme.font.display,
-    fontWeight: '300',
+    // Heavy Apple-style display weight. Inter 800 reads like SF Pro Display
+    // Heavy. Combined with tight negative tracking this gives the keynote
+    // poster feel you see on apple.com Vision Pro pages.
+    fontWeight: '800',
   },
   titleBlock: { marginTop: 14, gap: 0 },
-  // Each title line is its own <Text> with explicit numeric lineHeight, so
-  // react-native-web doesn't collapse them onto each other on web.
   titleWide: {
-    fontSize: 46,
-    lineHeight: 52,
-    letterSpacing: -1.1,
+    fontSize: 64,
+    lineHeight: 68,
+    letterSpacing: -2.4,
   },
   titleNarrow: {
-    fontSize: 40,
-    lineHeight: 46,
-    letterSpacing: -0.8,
+    fontSize: 48,
+    lineHeight: 52,
+    letterSpacing: -1.6,
   },
   sub: {
     marginTop: 22,

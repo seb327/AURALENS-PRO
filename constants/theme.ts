@@ -57,14 +57,16 @@ export const theme = {
     pill: 999,
   },
 
-  // On web the AuraShaderBackground injects Inter + Fraunces from Google
-  // Fonts. On native we fall through to System. Tokens reference the font
-  // family stack — pass directly to fontFamily on <Text>.
+  // Apple-style premium type stack. Display is the same heavy sans (Inter)
+  // we use for body so the whole UI reads as one luxury system, the way
+  // SF Pro Display + SF Pro Text work together on Apple's own marketing
+  // pages. Headlines use weight 800/900 + tight tracking for that
+  // keynote-slide feel.
   font: {
     display:
-      "'Fraunces', 'Times New Roman', Georgia, serif",
+      "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif",
     body:
-      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+      "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif",
     mono:
       "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
   },
