@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { PremiumButton } from '@/components/PremiumButton';
+import { DisplayTitle, Eyebrow, FadeUp, Subtitle } from '@/components/DisplayText';
 import { copy } from '@/constants/copy';
 import { theme } from '@/constants/theme';
 import { PRODUCT_IDS, PRODUCT_CATALOG, type ProductId } from '@/constants/products';
@@ -93,9 +94,13 @@ export default function Pricing() {
         <PremiumButton label="← Back" onPress={() => router.back()} variant="subtle" />
       </View>
 
-      <Text style={styles.title}>{copy.pricing.title}</Text>
-      <Text style={styles.sub}>{copy.pricing.sub}</Text>
+      <FadeUp delay={60} style={{ gap: 12 }}>
+        <Eyebrow>Choose your access</Eyebrow>
+        <DisplayTitle size="page">{copy.pricing.title}</DisplayTitle>
+        <Subtitle>{copy.pricing.sub}</Subtitle>
+      </FadeUp>
 
+      <FadeUp delay={220} style={{}}>
       <GlassCard strong>
         <Text style={styles.tierTitle}>{copy.pricing.single.title}</Text>
         <Text style={styles.price}>{prices[PRODUCT_IDS.singleReading]}</Text>
@@ -109,7 +114,9 @@ export default function Pricing() {
           <PremiumButton label={copy.pricing.single.cta} onPress={() => buy(PRODUCT_IDS.singleReading)} />
         )}
       </GlassCard>
+      </FadeUp>
 
+      <FadeUp delay={360} style={{}}>
       <GlassCard strong glow>
         <View style={styles.recommendedRow}>
           <Text style={styles.tierTitle}>{copy.pricing.monthly.title}</Text>
@@ -128,6 +135,7 @@ export default function Pricing() {
         )}
         <Text style={styles.cancelNote}>{copy.pricing.cancelNote}</Text>
       </GlassCard>
+      </FadeUp>
 
       <PremiumButton
         label="Restore Purchases"

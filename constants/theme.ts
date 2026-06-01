@@ -57,7 +57,17 @@ export const theme = {
     pill: 999,
   },
 
-  font: { display: 'System', body: 'System' },
+  // On web the AuraShaderBackground injects Inter + Fraunces from Google
+  // Fonts. On native we fall through to System. Tokens reference the font
+  // family stack — pass directly to fontFamily on <Text>.
+  font: {
+    display:
+      "'Fraunces', 'Times New Roman', Georgia, serif",
+    body:
+      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif",
+    mono:
+      "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+  },
 
   size: {
     h1: 40,

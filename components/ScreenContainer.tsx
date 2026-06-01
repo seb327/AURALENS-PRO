@@ -77,11 +77,12 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   content: {
-    padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xxxl,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.xxxl + 24,
     gap: theme.spacing.lg,
     // Cap content width so desktop browsers don't stretch screens edge-to-edge.
-    maxWidth: 720,
+    maxWidth: 760,
     width: '100%',
     alignSelf: 'center',
   },
