@@ -104,25 +104,36 @@ export function PremiumButton({
   const widthStyle: ViewStyle = fullWidth ? { alignSelf: 'stretch' } : {};
   const baseDisabled = inactive ? styles.disabled : null;
 
-  const content = (labelColor: string) => (
-    <View style={styles.row}>
-      {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
-      {loading ? (
-        <ActivityIndicator color={labelColor} size="small" />
-      ) : (
-        <Text
-          style={[styles.labelBase, { color: labelColor, fontSize: pad.font }]}
-          maxFontSizeMultiplier={1.3}
-          allowFontScaling
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
-      )}
-    </View>
-  );
+  const content = (labelColor: string) => {
+    if (loading) {
+      return <ActivityIndicator color={labelColor} size="small" />;
+    }
+    if (icon) {
+      return (
+        <View style={styles.row}>
+          <View style={styles.iconWrap}>{icon}</View>
+          <Text
+            style={[styles.labelBase, { color: labelColor, fontSize: pad.font }]}
+            maxFontSizeMultiplier={1.3}
+            allowFontScaling
+          >
+            {label}
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <Text
+        style={[styles.labelBase, { color: labelColor, fontSize: pad.font }]}
+        maxFontSizeMultiplier={1.3}
+        allowFontScaling
+      >
+        {label}
+      </Text>
+    );
+  };
 
-  // ── PRIMARY ────────────────────────────────────────────────────────────
+  // ── PRIMARY (solid gold gradient — high contrast, dark label) ──────────
   if (variant === 'primary') {
     return (
       <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
@@ -138,11 +149,9 @@ export function PremiumButton({
             colors={theme.gradients.gold as any}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.primaryGradient}
+            style={[styles.primarySolid, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}
           >
-            <View style={[styles.primaryInner, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}>
-              {content('#1A1305')}
-            </View>
+            {content('#1A1305')}
           </LinearGradient>
         </Pressable>
       </Animated.View>
@@ -242,18 +251,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // PRIMARY
+  // PRIMARY — solid gold gradient face, dark label = highest contrast & affordance
   primaryWrap: {
     borderRadius: theme.radius.pill,
     overflow: 'hidden',
-    minHeight: 48,
+    minHeight: 52,
   },
-  primaryGradient: {
-    padding: 1.4,
-    borderRadius: theme.radius.pill,
-  },
-  primaryInner: {
-    backgroundColor: '#1A1305',
+  primarySolid: {
     borderRadius: theme.radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
