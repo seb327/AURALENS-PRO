@@ -1,0 +1,33 @@
+# Excluded from the Docker build context for the Railway image.
+# Server build context is the project ROOT (see railway.json).
+node_modules
+**/node_modules
+.expo
+.next
+.cache
+dist
+**/dist
+.git
+.gitignore
+
+# Env files — Railway injects values via variables, never via .env in image.
+.env
+.env.*
+!.env.example
+!.env.development.example
+!.env.preview.example
+!.env.production.example
+
+# Local junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+u.email
+
+# Tooling cache / outputs not needed in image
+.idea
+.vscode
+coverage
+preview-output
+ai-buddy-output.txt

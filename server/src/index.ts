@@ -32,6 +32,9 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import {
   handleCreateCheckout,
@@ -263,26 +266,61 @@ app.options('*', (_req, res) => {
   res.status(204).end();
 });
 
-app.get('/', (_req, res) => {
-  applyCors(res);
-  res.json({ service: 'auralens-server', ok: true });
-});
+// ── API routes ───────────────────────────────────────────────────────────────
+// These MUST register before the static / SPA-fallback middleware so they
+// take precedence over the catch-all.
 
 app.get('/health', (_req, res) => {
   applyCors(res);
   res.json({ ok: true, ...envSummary() });
 });
 
-// Aura Buddy (existing).
-app.post('/', handleAiBuddy);
+app.get('/api', (_req, res) => {
+  applyCors(res);
+  res.json({ service: 'auralens-server', ok: true });
+});
+
+// Aura Buddy
 app.post('/ai-buddy', handleAiBuddy);
 
-// Stripe checkout (new).
+// Stripe checkout
 app.post('/checkout/session', handleCreateCheckout);
+
+// ── Web bundle (Expo export) ────────────────────────────────────────────────
+// The Dockerfile's web-build stage drops the bundle at /app/web. In dev (tsx)
+// the folder won't exist — that's fine, we degrade to a JSON ping at /.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const WEB_DIR = path.resolve(__dirname, '..', 'web');
+const WEB_INDEX = path.join(WEB_DIR, 'index.html');
+const hasWebBundle = fs.existsSync(WEB_INDEX);
+
+if (hasWebBundle) {
+  // Static assets (JS, CSS, images, fonts).
+  app.use(express.static(WEB_DIR, { index: false, maxAge: '1h' }));
+
+  // SPA fallback — any unmatched GET serves index.html so expo-router's
+  // client-side routes work (e.g. /pricing, /auth, /buddy).
+  app.get('*', (_req, res) => {
+    applyCors(res);
+    res.sendFile(WEB_INDEX);
+  });
+} else {
+  // Dev-mode ping when there's no exported bundle.
+  app.get('/', (_req, res) => {
+    applyCors(res);
+    res.json({ service: 'auralens-server', ok: true, mode: 'api-only' });
+  });
+  // Legacy compatibility — POST / used to hit Aura Buddy.
+  app.post('/', handleAiBuddy);
+}
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
 app.listen(PORT, HOST, () => {
   // eslint-disable-next-line no-console
-  console.log(`auralens-ai-buddy listening on http://${HOST}:${PORT}`);
+  console.log(
+    `auralens-server listening on http://${HOST}:${PORT} ` +
+      `(web bundle: ${hasWebBundle ? 'served' : 'not bundled'})`,
+  );
 });
