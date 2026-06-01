@@ -139,50 +139,41 @@ export function PremiumButton({
     );
   };
 
-  // ── WEB · STARDUST (every variant) ──────────────────────────────────────
-  // Single HTML <button> shape with a variant modifier class. Same depth +
-  // inset + pseudo specular for all variants — only the colour palette
-  // differs. CSS lives once in <style id="auralens-stardust-css">.
+  // ── WEB · LIQUID GLASS (every variant) ──────────────────────────────────
+  // Real frosted glass with backdrop-filter blur + saturate so the WebGL
+  // shader behind the page genuinely shows through and "reflects" off every
+  // button. SVG turbulence filter adds wet-glass warping.
   if (Platform.OS === 'web' && variant !== 'subtle') {
-    const sizePx = size === 'lg' ? '20px 38px' : size === 'sm' ? '12px 22px' : '16px 32px';
-    const fontPx = size === 'lg' ? 18 : size === 'sm' ? 13 : 15;
-    const modifier =
-      variant === 'primary'   ? 'auralens-stardust--gold'   :
-      variant === 'secondary' ? 'auralens-stardust--silver' :
-      variant === 'ghost'     ? 'auralens-stardust--ghost'  :
-      variant === 'danger'    ? 'auralens-stardust--danger' :
-                                'auralens-stardust--silver';
+    const variantClass =
+      variant === 'primary'   ? 'auralens-liquid--gold'   :
+      variant === 'secondary' ? 'auralens-liquid--silver' :
+      variant === 'ghost'     ? 'auralens-liquid--ghost'  :
+      variant === 'danger'    ? 'auralens-liquid--danger' :
+                                'auralens-liquid--silver';
+    const sizeClass =
+      size === 'lg' ? 'auralens-liquid--lg' :
+      size === 'sm' ? 'auralens-liquid--sm' : '';
     const showGlyph = variant === 'primary';
     return (
       <>
-        <AuralensStardustCSS />
+        <AuralensLiquidCSS />
         {React.createElement('button' as any, {
-          className: `auralens-stardust ${modifier}`,
+          className: `auralens-liquid ${variantClass} ${sizeClass}`,
           onClick: handlePress,
           disabled: inactive,
           'aria-label': a11y.accessibilityLabel,
           'aria-disabled': inactive,
           style: {
-            padding: 0,
-            border: 0,
-            outline: 'none',
-            cursor: inactive ? 'not-allowed' : 'pointer',
-            background: 'transparent',
-            font: 'inherit',
-            opacity: inactive ? 0.45 : 1,
             width: fullWidth ? '100%' : 'auto',
-            display: 'inline-block',
-            margin: 0,
           },
-        }, React.createElement('span', { className: 'auralens-stardust__shell' },
-          React.createElement('span', { className: 'auralens-stardust__wrap' },
-            React.createElement('span', { className: 'auralens-stardust__label', style: { fontSize: fontPx, padding: sizePx } },
-              showGlyph ? React.createElement('span', { className: 'auralens-stardust__glyph', 'aria-hidden': true }, '✦') : null,
-              showGlyph ? React.createElement('span', { className: 'auralens-stardust__glyph auralens-stardust__glyph--hover', 'aria-hidden': true }, '✧') : null,
-              loading ? React.createElement('span', null, '…') : label,
+        },
+          React.createElement('span', { className: 'auralens-liquid__face' },
+            showGlyph ? React.createElement('span', { className: 'auralens-liquid__glyph', 'aria-hidden': true }, '✦') : null,
+            React.createElement('span', { className: 'auralens-liquid__label' },
+              loading ? '…' : label,
             ),
           ),
-        ))}
+        )}
       </>
     );
   }
@@ -394,7 +385,7 @@ const styles = StyleSheet.create({
 // One-time <style> injection. The selectors target a real <button> wrapper
 // rendered above. Adapted from the user-supplied pearl/stardust pattern,
 // recoloured to the AuraLens gold-on-obsidian palette.
-const AURALENS_STARDUST_CSS = `
+const AURALENS_STARDUST_CSS_INERT = `
 .auralens-stardust {
   -webkit-tap-highlight-color: transparent;
 }
@@ -558,17 +549,200 @@ const AURALENS_STARDUST_CSS = `
 }
 `;
 
-let _stardustInjected = false;
-function AuralensStardustCSS(): any {
+// ─── Liquid glass CSS (web-only) ────────────────────────────────────────
+// Real frosted glass treatment using backdrop-filter so the plasma shader
+// BEHIND the page genuinely shows through and "reflects" off every button.
+// Plus an SVG turbulence/displacement filter for the wet-glass distortion.
+const AURALENS_LIQUID_CSS = `
+.auralens-liquid {
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  outline: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font: inherit;
+  z-index: 1;
+}
+.auralens-liquid__face {
+  /* CSS variables defaulted, overridden per variant */
+  --ink: rgba(247, 243, 234, 0.95);
+  --tint: rgba(244, 199, 107, 0.10);
+  --tint-hover: rgba(244, 199, 107, 0.18);
+  --glow: rgba(244, 199, 107, 0.35);
+  --inner-1: rgba(255, 255, 255, 0.30);
+  --inner-2: rgba(255, 255, 255, 0.20);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 999px;
+  padding: 18px 38px;
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  background: var(--tint);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  isolation: isolate;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 280ms ease,
+              box-shadow 280ms ease;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 12px 24px -8px rgba(0, 0, 0, 0.55),
+    0 24px 48px -12px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 0.5px -3px var(--inner-1),
+    inset -3px -3px 0.5px -3px var(--inner-2),
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.40),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.30),
+    inset 0 0 6px 6px rgba(255, 255, 255, 0.06),
+    inset 0 0 2px 2px rgba(255, 255, 255, 0.04),
+    0 0 18px var(--glow);
+}
+/* Inner displacement layer — gives the wet-glass warping */
+.auralens-liquid__face::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  backdrop-filter: url(#auralens-glass-filter);
+  -webkit-backdrop-filter: url(#auralens-glass-filter);
+}
+/* Top specular sheen */
+.auralens-liquid__face::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 8%;
+  height: 36%;
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.05) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  filter: blur(0.6px);
+  z-index: 1;
+}
+.auralens-liquid__label {
+  position: relative;
+  z-index: 2;
+}
+.auralens-liquid__glyph {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  font-size: 0.85em;
+  opacity: 0.85;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+.auralens-liquid:hover .auralens-liquid__face {
+  background: var(--tint-hover);
+  transform: translateY(-2px);
+}
+.auralens-liquid:hover .auralens-liquid__glyph {
+  transform: rotate(60deg) scale(1.12);
+  opacity: 1;
+}
+.auralens-liquid:active .auralens-liquid__face {
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.10),
+    0 4px 10px -4px rgba(0, 0, 0, 0.55),
+    inset 3px 3px 1px -2px rgba(255, 255, 255, 0.40),
+    inset -3px -3px 1px -2px rgba(255, 255, 255, 0.30),
+    inset 0 0 4px 3px rgba(255, 255, 255, 0.06),
+    0 0 14px var(--glow);
+}
+.auralens-liquid:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Variant tints ─────────────────────────────────────────────────── */
+.auralens-liquid--gold .auralens-liquid__face {
+  --ink: #FFE8B0;
+  --tint: rgba(244, 199, 107, 0.12);
+  --tint-hover: rgba(244, 199, 107, 0.22);
+  --glow: rgba(244, 199, 107, 0.45);
+}
+.auralens-liquid--silver .auralens-liquid__face {
+  --ink: rgba(247, 243, 234, 0.95);
+  --tint: rgba(255, 255, 255, 0.06);
+  --tint-hover: rgba(255, 255, 255, 0.12);
+  --glow: rgba(155, 108, 255, 0.30);
+}
+.auralens-liquid--ghost .auralens-liquid__face {
+  --ink: rgba(247, 243, 234, 0.82);
+  --tint: rgba(255, 255, 255, 0.03);
+  --tint-hover: rgba(255, 255, 255, 0.08);
+  --glow: rgba(255, 255, 255, 0.10);
+  --inner-1: rgba(255, 255, 255, 0.18);
+  --inner-2: rgba(255, 255, 255, 0.10);
+  padding: 14px 30px;
+}
+.auralens-liquid--danger .auralens-liquid__face {
+  --ink: rgba(255, 220, 215, 0.95);
+  --tint: rgba(229, 89, 78, 0.16);
+  --tint-hover: rgba(229, 89, 78, 0.26);
+  --glow: rgba(229, 89, 78, 0.45);
+}
+
+/* Sizes */
+.auralens-liquid--sm .auralens-liquid__face { padding: 10px 22px; font-size: 13px; }
+.auralens-liquid--lg .auralens-liquid__face { padding: 20px 42px; font-size: 17px; }
+`;
+
+// SVG turbulence + displacement filter, attached once to the DOM. The
+// filter creates the wet-glass warping referenced by backdrop-filter:
+// url(#auralens-glass-filter).
+const AURALENS_GLASS_SVG = `
+<svg style="position:fixed;width:0;height:0;pointer-events:none" aria-hidden="true">
+  <defs>
+    <filter id="auralens-glass-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.045 0.045" numOctaves="1" seed="4" result="t" />
+      <feGaussianBlur in="t" stdDeviation="2" result="b" />
+      <feDisplacementMap in="SourceGraphic" in2="b" scale="60" xChannelSelector="R" yChannelSelector="B" result="d" />
+      <feGaussianBlur in="d" stdDeviation="2" result="fb" />
+      <feComposite in="fb" in2="fb" operator="over" />
+    </filter>
+  </defs>
+</svg>
+`;
+
+let _liquidInjected = false;
+function AuralensLiquidCSS(): any {
   if (Platform.OS !== 'web') return null;
-  if (typeof document !== 'undefined' && !_stardustInjected) {
-    if (!document.getElementById('auralens-stardust-css')) {
+  if (typeof document !== 'undefined' && !_liquidInjected) {
+    if (!document.getElementById('auralens-liquid-css')) {
       const s = document.createElement('style');
-      s.id = 'auralens-stardust-css';
-      s.textContent = AURALENS_STARDUST_CSS;
+      s.id = 'auralens-liquid-css';
+      s.textContent = AURALENS_LIQUID_CSS;
       document.head.appendChild(s);
     }
-    _stardustInjected = true;
+    if (!document.getElementById('auralens-glass-svg')) {
+      const div = document.createElement('div');
+      div.id = 'auralens-glass-svg';
+      div.innerHTML = AURALENS_GLASS_SVG;
+      document.body.appendChild(div);
+    }
+    _liquidInjected = true;
   }
   return null;
 }

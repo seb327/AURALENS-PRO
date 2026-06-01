@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Dimensions, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PremiumButton } from '@/components/PremiumButton';
 import { Eyebrow, Subtitle } from '@/components/DisplayText';
@@ -28,6 +28,44 @@ export default function Hero() {
   }, []);
   const wide = w >= WIDE_BREAKPOINT;
 
+  // GSAP cinematic intro — web only. Title 1 fades + de-blurs up, title 2
+  // reveals via clip-path inset wipe, eyebrow + subtitle + CTAs stagger in,
+  // scan device drops in with a slight rotation.
+  const heroEnter = useRef(false);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || heroEnter.current) return;
+    heroEnter.current = true;
+    (async () => {
+      try {
+        const mod: any = await import('gsap');
+        const gsap = mod.gsap ?? mod.default ?? mod;
+        gsap.set('.gsap-eyebrow', { autoAlpha: 0, y: 12 });
+        gsap.set('.gsap-title-1', { autoAlpha: 0, y: 40, filter: 'blur(18px)', scale: 0.92 });
+        gsap.set('.gsap-title-2', { autoAlpha: 1, clipPath: 'inset(0 100% 0 0)' });
+        gsap.set('.gsap-sub',     { autoAlpha: 0, y: 16 });
+        gsap.set('.gsap-cta',     { autoAlpha: 0, y: 18, scale: 0.96 });
+        gsap.set('.gsap-trust',   { autoAlpha: 0 });
+        gsap.set('.gsap-scan',    { autoAlpha: 0, y: 60, rotationY: -8, scale: 0.94 });
+
+        const tl = gsap.timeline({ delay: 0.15 });
+        tl.to('.gsap-eyebrow', { autoAlpha: 1, y: 0, duration: 0.6, ease: 'power3.out' })
+          .to('.gsap-title-1', { autoAlpha: 1, y: 0, filter: 'blur(0px)', scale: 1, duration: 1.2, ease: 'expo.out' }, '-=0.35')
+          .to('.gsap-title-2', { clipPath: 'inset(0 0% 0 0)', duration: 1.0, ease: 'power4.inOut' }, '-=0.85')
+          .to('.gsap-sub',     { autoAlpha: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.55')
+          .to('.gsap-cta',     { autoAlpha: 1, y: 0, scale: 1, duration: 0.7, ease: 'back.out(1.2)', stagger: 0.10 }, '-=0.35')
+          .to('.gsap-trust',   { autoAlpha: 1, duration: 0.5 }, '-=0.25')
+          .to('.gsap-scan',    { autoAlpha: 1, y: 0, rotationY: 0, scale: 1, duration: 1.4, ease: 'expo.out' }, '-=1.4');
+      } catch {
+        // GSAP failed to load — just show the hero immediately.
+        if (typeof document !== 'undefined') {
+          document.querySelectorAll<HTMLElement>(
+            '.gsap-eyebrow, .gsap-title-1, .gsap-title-2, .gsap-sub, .gsap-cta, .gsap-trust, .gsap-scan'
+          ).forEach((el) => { el.style.opacity = '1'; el.style.visibility = 'visible'; el.style.transform = 'none'; el.style.clipPath = 'none'; el.style.filter = 'none'; });
+        }
+      }
+    })();
+  }, []);
+
   return (
     <ScreenContainer orbColour="Violet" orbSecondary="Blue">
       {/* Top nav strip */}
@@ -42,40 +80,54 @@ export default function Hero() {
         </View>
       </View>
 
-      {/* Hero row — NO animation on the text. Static = guaranteed no ghosting. */}
+      {/* Hero row — GSAP animates these classes (web only; native gets static). */}
       <View style={[styles.columns, wide && styles.columnsWide]}>
         <View style={[styles.left, wide && styles.leftWide]}>
-          <Eyebrow>{HERO.eyebrow}</Eyebrow>
+          <View {...({ className: 'gsap-eyebrow' } as any)}>
+            <Eyebrow>{HERO.eyebrow}</Eyebrow>
+          </View>
           <View style={styles.titleBlock}>
-            <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
+            <Text
+              {...({ className: 'gsap-title-1' } as any)}
+              style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}
+            >
               {HERO.titleLine1}
             </Text>
-            <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
+            <Text
+              {...({ className: 'gsap-title-2' } as any)}
+              style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}
+            >
               {HERO.titleLine2}
             </Text>
           </View>
-          <Subtitle style={styles.sub}>{HERO.sub}</Subtitle>
-
-          <View style={[styles.ctaBlock, wide && styles.ctaBlockWide]}>
-            <PremiumButton
-              label={HERO.primaryCta}
-              onPress={() => router.push('/scan')}
-              size="lg"
-              fullWidth={!wide}
-            />
-            <PremiumButton
-              label={HERO.secondaryCta}
-              onPress={() => router.push('/technology')}
-              variant="secondary"
-              fullWidth={!wide}
-            />
+          <View {...({ className: 'gsap-sub' } as any)}>
+            <Subtitle style={styles.sub}>{HERO.sub}</Subtitle>
           </View>
 
-          <Text style={styles.trust}>{HERO.trust}</Text>
+          <View style={[styles.ctaBlock, wide && styles.ctaBlockWide]}>
+            <View {...({ className: 'gsap-cta' } as any)}>
+              <PremiumButton
+                label={HERO.primaryCta}
+                onPress={() => router.push('/scan')}
+                size="lg"
+                fullWidth={!wide}
+              />
+            </View>
+            <View {...({ className: 'gsap-cta' } as any)}>
+              <PremiumButton
+                label={HERO.secondaryCta}
+                onPress={() => router.push('/technology')}
+                variant="secondary"
+                fullWidth={!wide}
+              />
+            </View>
+          </View>
+
+          <Text {...({ className: 'gsap-trust' } as any)} style={styles.trust}>{HERO.trust}</Text>
         </View>
 
         {wide && (
-          <View style={styles.right}>
+          <View {...({ className: 'gsap-scan' } as any)} style={styles.right}>
             <HeroScanExperience />
           </View>
         )}
