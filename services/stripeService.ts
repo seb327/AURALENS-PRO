@@ -58,8 +58,18 @@ export const stripeService = {
     if (!sb) {
       return { ok: false, message: 'Cloud sync is not configured. Sign in to purchase.', requiresSignIn: true };
     }
-    const { data: sessionData } = await sb.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
+
+    // Force-refresh so the access token is guaranteed fresh — prevents
+    // "session expired" 401s when a token has aged out in localStorage.
+    let accessToken: string | undefined;
+    try {
+      const { data: refreshed } = await sb.auth.refreshSession();
+      accessToken = refreshed?.session?.access_token;
+    } catch { /* fall through */ }
+    if (!accessToken) {
+      const { data: sessionData } = await sb.auth.getSession();
+      accessToken = sessionData?.session?.access_token;
+    }
     if (!accessToken) {
       return { ok: false, message: 'Sign in to purchase. Your account holds your subscription.', requiresSignIn: true };
     }

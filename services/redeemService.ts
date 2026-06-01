@@ -35,8 +35,20 @@ export const redeemService = {
     if (!sb) {
       return { ok: false, message: 'Sign in to redeem a code.', requiresSignIn: true };
     }
-    const { data: sessionData } = await sb.auth.getSession();
-    const token = sessionData?.session?.access_token;
+
+    // Force-refresh the session so the access token we send is guaranteed
+    // fresh. Without this, web users can be sitting on a session that
+    // looks valid in localStorage but whose access_token expired hours ago,
+    // which the server then rejects as "session expired".
+    let token: string | undefined;
+    try {
+      const { data: refreshed } = await sb.auth.refreshSession();
+      token = refreshed?.session?.access_token;
+    } catch { /* fall through to getSession */ }
+    if (!token) {
+      const { data: sessionData } = await sb.auth.getSession();
+      token = sessionData?.session?.access_token;
+    }
     if (!token) {
       return { ok: false, message: 'Sign in to redeem a code.', requiresSignIn: true };
     }
