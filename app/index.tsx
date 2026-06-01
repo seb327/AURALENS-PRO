@@ -20,8 +20,8 @@ export default function Hero() {
       </View>
 
       <View style={styles.ctaBlock}>
-        <PremiumButton label={copy.hero.cta} onPress={() => router.push('/technology')} />
-        <PremiumButton label="See pricing" onPress={() => router.push('/pricing')} variant="ghost" />
+        <PremiumButton label="Start My Free Reading" onPress={() => router.push('/scan')} />
+        <PremiumButton label="How it works" onPress={() => router.push('/technology')} variant="ghost" />
         <Text style={styles.trust}>{copy.hero.trust}</Text>
       </View>
 

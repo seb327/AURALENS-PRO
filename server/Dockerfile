@@ -5,7 +5,7 @@
 #   the web bundle as static files. One Railway URL = full app + API.
 
 # ─── Stage 1: Expo web export ────────────────────────────────────────────────
-FROM node:20-alpine AS web-build
+FROM node:22-alpine AS web-build
 WORKDIR /workspace
 
 # Native deps that expo image processing sometimes needs.
@@ -42,7 +42,7 @@ ENV EXPO_PUBLIC_SUPABASE_URL=$EXPO_PUBLIC_SUPABASE_URL \
 RUN npx expo export --platform web --output-dir dist
 
 # ─── Stage 2: Server bundle ──────────────────────────────────────────────────
-FROM node:20-alpine AS server-build
+FROM node:22-alpine AS server-build
 WORKDIR /workspace
 
 COPY server/package.json server/package-lock.json* ./server/
@@ -55,7 +55,7 @@ RUN npm install --no-audit --no-fund
 RUN npm run build
 
 # ─── Stage 3: Runtime ────────────────────────────────────────────────────────
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production

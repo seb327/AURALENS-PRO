@@ -45,6 +45,7 @@ interface PersistedShape {
   customerId?: string;
   activeProductIds: string[];
   lastSyncedAt?: string;
+  freeTrialGranted?: boolean;   // one-time onboarding gift
 }
 
 const DEFAULT: PersistedShape = {
@@ -52,7 +53,13 @@ const DEFAULT: PersistedShape = {
   hasMonthly: false,
   consumedTransactionIds: [],
   activeProductIds: [],
+  freeTrialGranted: false,
 };
+
+// Onboarding: every fresh device gets one free reading so users can try
+// the full experience without sign-up or payment. Granted exactly once,
+// then `freeTrialGranted` flips true so we never re-grant on reload.
+const FREE_TRIAL_CREDITS = 1;
 
 async function persist(s: PersistedShape): Promise<void> {
   await saveJSON(STORAGE_KEYS.entitlement, s);
@@ -102,13 +109,28 @@ export const useEntitlementStore = create<EntitlementState>((set, get) => ({
     set({ isLoading: true });
     const persisted = await loadJSON<PersistedShape>(STORAGE_KEYS.entitlement, DEFAULT);
     const isConfigured = await purchaseService.ensureConfigured();
+
+    // First-visit free tier: give every new device one reading credit so
+    // signup-less onboarding is possible. Persist the "granted" flag so we
+    // don't re-grant on reload, on cache clear that survives storage, or
+    // on entitlement refresh.
+    let next = persisted;
+    if (!persisted.freeTrialGranted) {
+      next = {
+        ...persisted,
+        readingCredits: Math.max(persisted.readingCredits, FREE_TRIAL_CREDITS),
+        freeTrialGranted: true,
+      };
+      await persist(next);
+    }
+
     set({
-      ...persisted,
+      ...next,
       isConfigured,
       isLoading: false,
       hydrated: true,
     });
-    // best-effort background sync
+    // best-effort background sync — only after the free credit is locked
     if (isConfigured) {
       get().refresh().catch(() => {});
     }
