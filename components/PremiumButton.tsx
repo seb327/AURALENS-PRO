@@ -87,6 +87,12 @@ export function PremiumButton({
   const handlePress = () => {
     if (inactive) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    // Web fallback — Vibration API where supported. Silent if not.
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+      try { (navigator as any).vibrate?.(20); } catch { /* swallow */ }
+      // Light shader bloom on every press for kinetic feedback.
+      try { (window as any).auralensEnergyPulse?.(0.45); } catch { /* swallow */ }
+    }
     onPress();
   };
 

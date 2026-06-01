@@ -1,14 +1,17 @@
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { PremiumButton } from '@/components/PremiumButton';
 import { AuraOrb } from '@/components/AuraOrb';
+import { DisplayTitle, FadeUp } from '@/components/DisplayText';
 import { copy } from '@/constants/copy';
 import { theme } from '@/constants/theme';
 import { useReadingStore } from '@/store/useReadingStore';
 import { useEntitlementStore } from '@/store/useEntitlementStore';
 import { useAuthStore, canCloudSync } from '@/store/useAuthStore';
+import { pulseShaderEnergy } from '@/services/haptics';
 
 export default function Result() {
   const reading = useReadingStore((s) => s.current);
@@ -33,6 +36,13 @@ export default function Result() {
 
   const r = reading.auraResult;
   const zones = Object.entries(reading.mienShiangZones);
+
+  // Result reveal — bloom the shader on mount so the page entry feels
+  // earned, not jumped-to.
+  useEffect(() => {
+    pulseShaderEnergy(1.4);
+    setTimeout(() => pulseShaderEnergy(0.6), 350);
+  }, []);
 
   function share() {
     Share.share({
