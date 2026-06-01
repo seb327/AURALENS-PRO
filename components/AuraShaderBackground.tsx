@@ -119,8 +119,10 @@ void main() {
   space.x += rnd(space.y * warpFrequency + u_time * warpSpeed + 2.0) * warpAmplitude * horizontalFade;
 
   vec4 lines = vec4(0.0);
-  vec4 bgColor1 = vec4(0.052, 0.040, 0.130, 1.0);  // deep indigo (AuraLens)
-  vec4 bgColor2 = vec4(0.180, 0.090, 0.330, 1.0);  // violet
+  // Brighter so the field reads through the screen wash. Still dark enough
+  // to keep text legibility everywhere.
+  vec4 bgColor1 = vec4(0.10, 0.08, 0.26, 1.0);   // indigo
+  vec4 bgColor2 = vec4(0.30, 0.16, 0.48, 1.0);   // violet
   // Line colour shifts gold under fast motion / energy bloom; otherwise violet
   vec4 lineColor = vec4(
     mix(0.40, 0.92, velAbs + u_energy * 0.5),
