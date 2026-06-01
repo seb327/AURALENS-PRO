@@ -82,7 +82,9 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xxxl + 24,
     gap: theme.spacing.lg,
     // Cap content width so desktop browsers don't stretch screens edge-to-edge.
-    maxWidth: 760,
+    // Wider than a typical reading column because we run two-column hero on
+    // desktop (see app/index.tsx).
+    maxWidth: 1120,
     width: '100%',
     alignSelf: 'center',
   },
