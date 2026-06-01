@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { hashString } from '@/engine/scoring';
@@ -7,6 +8,142 @@ import type {
   FaceAnalyzer,
   FaceAnalyzerKind,
 } from '@/types/faceAnalysis';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Real canvas-based pixel sampling for web
+//
+// Web has no native face landmark detector without a heavy ML library, but it
+// DOES have <canvas>. We use it to extract real signals from the actual pixel
+// data: mean luminance (brightness), standard deviation (proxy for detail /
+// non-blurriness), and a coarse skin-tone presence score so we can reject
+// blank / non-portrait images.
+//
+// These signals drive the deterministic aura engine — same image always gives
+// the same reading, but two different photos give two different readings
+// that actually reflect their content.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface WebImageSignals {
+  width: number;
+  height: number;
+  brightness: number;        // 0..1 mean luminance
+  detail: number;            // 0..1 normalised std dev of luminance
+  skinTonePresence: number;  // 0..1 fraction of pixels in skin-tone hue range
+  meanHueDeg: number;        // 0..360 — dominant hue
+  contentHash: string;       // pixel-derived hash, stable per image
+  ok: boolean;               // false if we couldn't even read pixels
+}
+
+async function sampleWebImage(uri: string): Promise<WebImageSignals> {
+  const fail: WebImageSignals = {
+    width: 0, height: 0,
+    brightness: 0.5, detail: 0.5, skinTonePresence: 0,
+    meanHueDeg: 0, contentHash: hashString(uri).toString(16),
+    ok: false,
+  };
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return fail;
+
+  const img: HTMLImageElement = await new Promise((resolve, reject) => {
+    const i = new (window as any).Image();
+    i.crossOrigin = 'anonymous';
+    i.onload = () => resolve(i);
+    i.onerror = (e: any) => reject(e);
+    i.src = uri;
+  }).catch(() => null) as any;
+  if (!img) return fail;
+
+  const W = img.naturalWidth || img.width || 0;
+  const H = img.naturalHeight || img.height || 0;
+  if (W === 0 || H === 0) return fail;
+
+  // Downsample for speed: longest side 256 px is plenty for these signals.
+  const scale = Math.min(1, 256 / Math.max(W, H));
+  const cw = Math.max(16, Math.round(W * scale));
+  const ch = Math.max(16, Math.round(H * scale));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = cw;
+  canvas.height = ch;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return fail;
+  ctx.drawImage(img, 0, 0, cw, ch);
+
+  let pixels: Uint8ClampedArray;
+  try {
+    pixels = ctx.getImageData(0, 0, cw, ch).data;
+  } catch {
+    // CORS-tainted canvas — happens if image was loaded cross-origin without
+    // crossOrigin attr or the server didn't send CORS headers. Local
+    // blob: and data: URLs are exempt.
+    return fail;
+  }
+
+  let sumL = 0, sumL2 = 0;
+  let skin = 0;
+  let sumHueX = 0, sumHueY = 0;
+  const count = cw * ch;
+  let contentAccum = 0;
+
+  for (let p = 0; p < pixels.length; p += 4) {
+    const r = pixels[p];
+    const g = pixels[p + 1];
+    const b = pixels[p + 2];
+    // BT.709 luma
+    const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    sumL += lum;
+    sumL2 += lum * lum;
+
+    // Crude skin-tone test (warm hue, mid-light value, R > B by a bit).
+    if (
+      r > 95 && g > 40 && b > 20 &&
+      r > g && r > b &&
+      Math.abs(r - g) > 15 &&
+      lum > 0.18 && lum < 0.85
+    ) {
+      skin++;
+    }
+
+    // Accumulate hue as unit vector for circular mean.
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const d = max - min;
+    if (d > 8) {
+      let h = 0;
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      const hueDeg = h * 60;
+      const rad = (hueDeg * Math.PI) / 180;
+      sumHueX += Math.cos(rad);
+      sumHueY += Math.sin(rad);
+    }
+
+    // Cheap content hash — fold a few well-distributed pixels.
+    if ((p & 0x3ff) === 0) contentAccum = ((contentAccum * 31) + r + g * 7 + b * 13) | 0;
+  }
+
+  const meanL = sumL / count;
+  const varL = sumL2 / count - meanL * meanL;
+  const stdL = Math.sqrt(Math.max(0, varL));
+  // Map std dev to a 0..1 detail score. Typical portraits: std ~0.10–0.25.
+  const detail = Math.max(0, Math.min(1, stdL * 4));
+  const skinFrac = skin / count;
+
+  const meanHueRad = Math.atan2(sumHueY, sumHueX);
+  const meanHueDeg = ((meanHueRad * 180) / Math.PI + 360) % 360;
+
+  const contentHash = (((contentAccum >>> 0) ^ (cw * 1009 + ch)) >>> 0).toString(16);
+
+  return {
+    width: cw,
+    height: ch,
+    brightness: meanL,
+    detail,
+    skinTonePresence: skinFrac,
+    meanHueDeg,
+    contentHash,
+    ok: true,
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Native analyzer (dev build only)
@@ -270,9 +407,52 @@ const heuristicFaceAnalyzer: FaceAnalyzer = {
   kind: 'heuristic',
   async isAvailable() { return true; },
   async analyzeImage(uri) {
-    // Try to read image metadata, but never fail outright — on web some URI
-    // shapes (blob:, data:) can't be sized by expo-image-manipulator. We fall
-    // back to plausible defaults so a reading still happens.
+    // ── Web path: real canvas pixel sampling ──────────────────────────────
+    if (Platform.OS === 'web') {
+      const sig = await sampleWebImage(uri);
+      if (sig.ok) {
+        const issues: string[] = [];
+        // Sanity check: image must show a portrait-ish subject. Pure
+        // backgrounds, screenshots, dark frames get rejected so the user
+        // doesn't waste a credit on a non-face image.
+        if (sig.skinTonePresence < 0.012) issues.push('no-face');
+        if (sig.brightness < 0.08)        issues.push('too-dark');
+        if (sig.brightness > 0.94)        issues.push('blown-highlights');
+        if (sig.detail < 0.04)            issues.push('low-detail');
+
+        const facesDetected = issues.includes('no-face') ? 0 : 1;
+        const assumedBounds = { cx: 0.5, cy: 0.5, size: 0.4 };
+
+        const { quality, issues: qIssues } = scoreQuality({
+          facesDetected,
+          imageWidth: sig.width,
+          imageHeight: sig.height,
+          brightnessEstimate: sig.brightness,
+          detailEstimate: sig.detail,
+          faceBounds: assumedBounds,
+        });
+
+        const mergedIssues = Array.from(new Set([...issues, ...qIssues])) as any[];
+
+        const base: FaceAnalysisResult = {
+          analyzer: 'heuristic',
+          sourceUri: uri,
+          imageHash: sig.contentHash,
+          imageWidth: sig.width,
+          imageHeight: sig.height,
+          facesDetected,
+          quality,
+          issues: mergedIssues,
+          rescan: false,
+        };
+        const r = shouldRescanFromAnalysis(base);
+        return { ...base, rescan: r.rescan, rescanReason: r.reason };
+      }
+      // sampleWebImage failed (CORS / unreadable) — fall through to default
+      // path below so the user still gets a graceful result.
+    }
+
+    // ── Native / fallback path: file-size based estimates ─────────────────
     let width = 1080;
     let height = 1440;
     try {
@@ -281,9 +461,7 @@ const heuristicFaceAnalyzer: FaceAnalyzer = {
         width = meta.width;
         height = meta.height;
       }
-    } catch {
-      // keep the defaults — continue with the rest of the pipeline
-    }
+    } catch { /* keep defaults */ }
 
     const [brightness, detail, hash] = await Promise.all([
       estimateBrightness(uri),
@@ -291,7 +469,6 @@ const heuristicFaceAnalyzer: FaceAnalyzer = {
       hashUri(uri),
     ]);
 
-    // Without real face detection we assume the user framed within guidance.
     const assumedBounds = { cx: 0.5, cy: 0.5, size: 0.4 };
 
     const { quality, issues } = scoreQuality({
