@@ -140,9 +140,10 @@ export function PremiumButton({
   };
 
   // ── PRIMARY ────────────────────────────────────────────────────────────
-  // Luxury treatment: deep obsidian face, thin gold gradient border, gold
-  // text. Reads like a high-end watch or fragrance brand button — quietly
-  // expensive, not bright yellow plastic.
+  // Filled luxury surface: dark glass base, soft gold→violet gradient on
+  // top, 1px white specular highlight at the top edge, gold-glow drop
+  // shadow underneath. Cream label, not gold-on-gold. Reads as a
+  // physical premium button, not an outline.
   if (variant === 'primary') {
     return (
       <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
@@ -154,16 +155,28 @@ export function PremiumButton({
           {...a11y}
           style={[styles.primaryWrap, theme.shadow.glowGold, baseDisabled]}
         >
+          {/* Base obsidian glass */}
+          <View style={styles.primaryBase} />
+          {/* Soft gold→violet surface gradient */}
           <LinearGradient
-            colors={theme.gradients.gold as any}
+            colors={['rgba(244,199,107,0.55)', 'rgba(201,150,69,0.32)', 'rgba(155,108,255,0.22)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.primaryBorder}
-          >
-            <View style={[styles.primaryFace, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}>
-              {content(theme.colors.auraGoldLight)}
-            </View>
-          </LinearGradient>
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Top specular highlight — fine 1px gradient that catches the eye */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.55)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 0.45 }}
+            style={[StyleSheet.absoluteFill, { opacity: 0.55 }]}
+          />
+          {/* Hairline border to define the edge */}
+          <View style={styles.primaryRing} pointerEvents="none" />
+          {/* Content */}
+          <View style={[styles.primaryContent, { paddingVertical: pad.v + 2, paddingHorizontal: pad.h + 4 }]}>
+            {content('#1A1305')}
+          </View>
         </Pressable>
       </Animated.View>
     );
@@ -262,19 +275,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // PRIMARY — obsidian face inside a hairline gold-gradient border
+  // PRIMARY — filled glass with layered gradient surface
   primaryWrap: {
     borderRadius: theme.radius.pill,
     overflow: 'hidden',
-    minHeight: 52,
+    minHeight: 56,
+    position: 'relative',
   },
-  primaryBorder: {
-    padding: 1.2,
-    borderRadius: theme.radius.pill,
+  primaryBase: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#F4C76B',
   },
-  primaryFace: {
-    backgroundColor: 'rgba(10,8,14,0.92)',
+  primaryRing: {
+    ...StyleSheet.absoluteFillObject,
     borderRadius: theme.radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  primaryContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
