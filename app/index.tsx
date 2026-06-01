@@ -31,18 +31,16 @@ export default function Hero() {
   return (
     <ScreenContainer orbColour="Violet" orbSecondary="Blue">
       {/* Top nav strip */}
-      <FadeUp delay={50}>
-        <View style={styles.topBar}>
-          <View style={styles.brandRow}>
-            <Text style={styles.brand}>{APP_DISPLAY_NAME.toUpperCase()}</Text>
-            <Text style={styles.brandSub}>by Vybstak</Text>
-          </View>
-          <View style={styles.topLinks}>
-            <TopLink label="Pricing" to="/pricing" />
-            <TopLink label="Sign in" to="/auth" />
-          </View>
+      <View style={styles.topBar}>
+        <View style={styles.brandRow}>
+          <Text style={styles.brand}>{APP_DISPLAY_NAME.toUpperCase()}</Text>
+          <Text style={styles.brandSub}>by Vybstak</Text>
         </View>
-      </FadeUp>
+        <View style={styles.topLinks}>
+          <TopLink label="Pricing" to="/pricing" />
+          <TopLink label="Sign in" to="/auth" />
+        </View>
+      </View>
 
       {/* Hero row — NO animation on the text. Static = guaranteed no ghosting. */}
       <View style={[styles.columns, wide && styles.columnsWide]}>
