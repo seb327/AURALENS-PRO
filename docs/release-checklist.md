@@ -3,8 +3,8 @@
 ## Phase 2 prerequisites
 - [x] Replace mock `purchaseService` with RevenueCat + StoreKit 2 + Google Play Billing (Phase 2.2)
 - [ ] Create RevenueCat project, add API keys to `.env` (`REVENUECAT_IOS_KEY`, `REVENUECAT_ANDROID_KEY`)
-- [ ] Configure products `auralens_instant_reading_099` and `auralens_monthly_999` in App Store Connect and Play Console
-- [ ] Attach `auralens_monthly_999` to the `monthly` entitlement in RevenueCat
+- [ ] Configure products `auralens_instant_reading_199` and `auralens_monthly_799` in App Store Connect and Play Console
+- [ ] Attach `auralens_monthly_799` to the `monthly` entitlement in RevenueCat
 - [ ] Add `react-native-purchases` and build a dev client (`eas build --profile development`)
 - [x] Add real face-landmark pipeline abstraction (Phase 2.1)
 - [ ] Wire `@react-native-ml-kit/face-detection` in a dev build for production landmark accuracy

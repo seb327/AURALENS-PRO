@@ -132,15 +132,22 @@ export default function Processing() {
     <ScreenContainer scroll={false} particles>
       <View style={styles.center}>
         <AuraOrb size={300} colour="Violet" secondary="Gold" />
-        <Text
-          style={styles.step}
-          accessibilityLiveRegion="polite"
-          accessibilityRole="text"
-          accessibilityLabel={`${copy.processing[step]} Step ${step + 1} of ${copy.processing.length}.`}
-          maxFontSizeMultiplier={1.5}
-        >
-          {copy.processing[step]}
-        </Text>
+        <View style={styles.stepBlock}>
+          <Text
+            style={styles.step}
+            accessibilityLiveRegion="polite"
+            accessibilityRole="text"
+            accessibilityLabel={`${copy.processing[step]} Step ${step + 1} of ${copy.processing.length}.`}
+            maxFontSizeMultiplier={1.5}
+          >
+            {copy.processing[step]}
+          </Text>
+          <View style={styles.dots} accessible={false}>
+            {copy.processing.map((_, i) => (
+              <View key={i} style={[styles.dot, i <= step && styles.dotActive]} />
+            ))}
+          </View>
+        </View>
         <Text style={styles.dis} maxFontSizeMultiplier={1.4}>{copy.disclaimers.short}</Text>
       </View>
     </ScreenContainer>
@@ -148,9 +155,16 @@ export default function Processing() {
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 24 },
-  step: { color: theme.colors.softWhite, fontSize: 18, letterSpacing: 0.4, fontWeight: '300' },
-  dis: { color: theme.colors.dim, fontSize: 11, textAlign: 'center', paddingHorizontal: 24 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 32 },
+  stepBlock: { alignItems: 'center', gap: 14 },
+  step: {
+    color: theme.colors.softWhite, fontSize: 22, letterSpacing: 0.4,
+    fontWeight: '300', textAlign: 'center', paddingHorizontal: 24,
+  },
+  dots: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.16)' },
+  dotActive: { backgroundColor: theme.colors.auraGold },
+  dis: { color: theme.colors.dim, fontSize: 11, textAlign: 'center', paddingHorizontal: 24, letterSpacing: 0.4 },
   errBlock: { gap: 12, paddingVertical: 24 },
   errTitle: { color: theme.colors.softWhite, fontSize: 24, fontWeight: '300' },
   errBody: { color: theme.colors.mute, fontSize: 15, lineHeight: 22 },

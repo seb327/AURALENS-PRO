@@ -51,8 +51,8 @@ Take a front-camera scan, or upload three photos from different chapters of
 your life. AuraLens analyses facial landmark geometry, expression balance,
 lighting, and seven symbolic zones to generate a calm, grounded reflection.
 
-— Instant aura reading (£0.99) — one symbolic reading, no tokens, no hidden credits
-— AuraLens Monthly (£9.99/month) — unlimited readings, aura timeline, AI Aura Buddy
+— Instant aura reading (£1.99) — one symbolic reading, no tokens, no hidden credits
+— AuraLens Monthly (£7.99/month) — unlimited readings, aura timeline, AI Aura Buddy
 
 Every reading is for reflection and wellbeing only. AuraLens is not medical,
 psychological, or diagnostic advice.
@@ -84,7 +84,7 @@ psychological, or diagnostic advice.
 ## Subscription + purchase explanation (in-app + listings)
 
 ```
-AuraLens Monthly — £9.99/month
+AuraLens Monthly — £7.99/month
 Auto-renews every month until cancelled. Manage or cancel any time in your
 App Store or Google Play account. The instant reading is a one-time
 in-app purchase and is consumed when the reading is generated.

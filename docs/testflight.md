@@ -22,8 +22,8 @@ Create both products under *Features → In-App Purchases*:
 
 | Product ID                         | Type                          | Price |
 |------------------------------------|-------------------------------|-------|
-| `auralens_instant_reading_099`     | Consumable                    | £0.99 |
-| `auralens_monthly_999`             | Auto-Renewable Subscription   | £9.99/month |
+| `auralens_instant_reading_199`     | Consumable                    | £1.99 |
+| `auralens_monthly_799`             | Auto-Renewable Subscription   | £7.99/month |
 
 For the subscription:
 - Subscription group: `auralens_main`
@@ -36,7 +36,7 @@ Submit IAPs **for review** alongside (or before) the binary. They reach "Ready t
 ## RevenueCat linking
 - Add the App Store Connect API key (Issuer ID, Key ID, .p8) in RevenueCat → *Project settings → Apps → iOS*
 - Attach both product IDs to the RevenueCat Offering `default`
-- Attach `auralens_monthly_999` to the entitlement `monthly`
+- Attach `auralens_monthly_799` to the entitlement `monthly`
 
 ## Privacy nutrition labels
 App Store Connect → *App Privacy*. Declare:

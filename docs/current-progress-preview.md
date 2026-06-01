@@ -32,7 +32,7 @@ Every number below comes from the most recent local run (`npm test`, `npx tsc --
 - Hero screen with floating aura orb, particle field, hero copy
 - Technology page explaining face zones, landmark geometry, aura pattern mapping, AI guidance
 - Privacy-first section with consent statements
-- Pricing screen with live RevenueCat prices (fallback `£0.99` / `£9.99/month`)
+- Pricing screen with live RevenueCat prices (fallback `£1.99` / `£7.99/month`)
 
 ### Reading engine (local + deterministic)
 - Six-tier symbolic aura labels: **Clear / Rising / Mixed / Shielded / Clouded / Heavy**
@@ -98,7 +98,7 @@ Every number below comes from the most recent local run (`npm test`, `npx tsc --
 | System         | Status              | Notes                                           |
 |----------------|---------------------|-------------------------------------------------|
 | RevenueCat     | ✅ Wired (lazy)     | Dev mock when no key; real SDK in dev build     |
-| Products       | ✅ Defined          | `auralens_instant_reading_099`, `auralens_monthly_999` |
+| Products       | ✅ Defined          | `auralens_instant_reading_199`, `auralens_monthly_799` |
 | Entitlement    | ✅ Server-mirrored  | Pushed to `entitlement_snapshots` on every change |
 | Restore        | ✅ Implemented      | Surfaces subscription state, explains consumables |
 | Stripe         | ❌ Not in native    | By design — App Store + Play Billing only       |

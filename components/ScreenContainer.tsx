@@ -68,5 +68,9 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.xxxl,
     gap: theme.spacing.lg,
+    // Cap content width so desktop browsers don't stretch screens edge-to-edge.
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
   },
 });

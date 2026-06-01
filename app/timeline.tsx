@@ -3,7 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { PremiumButton } from '@/components/PremiumButton';
+import { AuraOrb } from '@/components/AuraOrb';
 import { theme } from '@/constants/theme';
+import { copy } from '@/constants/copy';
 import { useEntitlementStore, canAccessMonthlyFeatures } from '@/store/useEntitlementStore';
 import { useReadingStore } from '@/store/useReadingStore';
 import { useAuthStore, canCloudSync } from '@/store/useAuthStore';
@@ -62,9 +64,11 @@ export default function Timeline() {
         >
           {cloudOn
             ? lastSync
-              ? `${lastSync.status.toUpperCase()} · pushed ${lastSync.pushed} · pulled ${lastSync.pulled}`
-              : 'Cloud sync on'
-            : '✓ Local only'}
+              ? lastSync.status === 'success'
+                ? copy.timeline.syncedJustNow(lastSync.pushed, lastSync.pulled)
+                : 'Sync paused — try again'
+              : 'Cloud sync ready'
+            : copy.timeline.localOnly}
         </Text>
         {cloudOn && (
           <PremiumButton
@@ -77,9 +81,14 @@ export default function Timeline() {
       </View>
 
       {readings.length === 0 ? (
-        <GlassCard>
-          <Text style={styles.empty}>No readings yet. Start your first scan.</Text>
-          <PremiumButton label="Start Scan" onPress={() => router.push('/scan')} />
+        <GlassCard strong>
+          <View style={styles.emptyOrb}>
+            <AuraOrb size={140} colour="Violet" secondary="Gold" intensity={0.85} />
+          </View>
+          <Text style={styles.emptyTitle}>{copy.timeline.emptyTitle}</Text>
+          <Text style={styles.emptyBody}>{copy.timeline.emptyBody}</Text>
+          <View style={{ height: 16 }} />
+          <PremiumButton label={copy.timeline.emptyCta} onPress={() => router.push('/scan')} />
         </GlassCard>
       ) : (
         <>
@@ -121,6 +130,9 @@ const styles = StyleSheet.create({
   lockTitle: { color: theme.colors.auraGold, letterSpacing: 2, fontSize: 11, textTransform: 'uppercase', marginBottom: 8 },
   lockBody: { color: theme.colors.softWhite, fontSize: 14, lineHeight: 22, marginBottom: 16 },
   empty: { color: theme.colors.mute, marginBottom: 16, fontSize: 14 },
+  emptyOrb: { alignItems: 'center', marginBottom: 8 },
+  emptyTitle: { color: theme.colors.softWhite, fontSize: 18, fontWeight: '500', textAlign: 'center', marginTop: 4 },
+  emptyBody: { color: theme.colors.mute, fontSize: 14, lineHeight: 21, textAlign: 'center', marginTop: 8 },
   rowHead: { flexDirection: 'row', justifyContent: 'space-between' },
   rowLabel: { color: theme.colors.softWhite, fontSize: 16, fontWeight: '500' },
   rowScore: { color: theme.colors.auraGold, fontSize: 18 },

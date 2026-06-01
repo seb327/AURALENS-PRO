@@ -50,12 +50,15 @@ export default function Privacy() {
         <PremiumButton label="← Back" onPress={() => router.back()} variant="subtle" />
       </View>
       <Text style={styles.title}>Privacy</Text>
-      {SECTIONS.map((s) => (
-        <GlassCard key={s.title}>
-          <Text style={styles.h}>{s.title}</Text>
-          <Text style={styles.b}>{s.body}</Text>
-        </GlassCard>
-      ))}
+      {SECTIONS.map((s) => {
+        const strong = /opt-in|control|never do/i.test(s.title);
+        return (
+          <GlassCard key={s.title} strong={strong}>
+            <Text style={styles.h}>{s.title}</Text>
+            <Text style={styles.b}>{s.body}</Text>
+          </GlassCard>
+        );
+      })}
     </ScreenContainer>
   );
 }

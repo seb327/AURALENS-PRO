@@ -32,3 +32,6 @@ secrets/
 
 expo-env.d.ts
 # @end expo-cli
+
+u.email
+supabase/.temp/

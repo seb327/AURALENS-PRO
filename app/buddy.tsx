@@ -76,7 +76,22 @@ export default function Buddy() {
       <View style={styles.backRow}>
         <PremiumButton label="← Back" onPress={() => router.back()} variant="subtle" />
       </View>
-      <Text style={styles.title}>{copy.buddy.title}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{copy.buddy.title}</Text>
+        {__DEV__ && (() => {
+          const last = [...buddy.messages].reverse().find((m) => m.role === 'buddy');
+          const mode = last?.source === 'remote' ? 'LIVE EDGE FN' : last?.source === 'fallback' ? 'LOCAL FALLBACK' : 'READY';
+          const tone =
+            last?.source === 'remote' ? styles.modeOk :
+            last?.source === 'fallback' ? styles.modeWarn :
+            styles.modeReady;
+          return (
+            <View style={[styles.modePill, tone]}>
+              <Text style={[styles.modePillText, tone]}>{mode}</Text>
+            </View>
+          );
+        })()}
+      </View>
 
       {lastReading && (
         <GlassCard>
@@ -120,7 +135,7 @@ export default function Buddy() {
                 </View>
               )}
               {m.source === 'fallback' && m.role === 'buddy' && (
-                <Text style={styles.fallbackTag}>· Local guidance (offline)</Text>
+                <Text style={styles.fallbackTag}>Offline reflection — using local guidance</Text>
               )}
             </View>
           ))}
@@ -183,6 +198,17 @@ export default function Buddy() {
 const styles = StyleSheet.create({
   backRow: { alignItems: 'flex-start' },
   title: { color: theme.colors.softWhite, fontSize: 28, fontWeight: '300', marginBottom: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  modePill: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 8,
+  },
+  modePillText: { fontSize: 10, letterSpacing: 1.5, fontWeight: '600' },
+  modeOk:    { borderColor: 'rgba(102,224,163,0.5)', backgroundColor: 'rgba(102,224,163,0.10)', color: theme.colors.auraGreen },
+  modeWarn:  { borderColor: 'rgba(244,199,107,0.5)', backgroundColor: 'rgba(244,199,107,0.10)', color: theme.colors.auraGold },
+  modeReady: { borderColor: theme.colors.hairline, backgroundColor: 'rgba(255,255,255,0.04)', color: theme.colors.mute },
   kav: { flex: 1 },
   thread: { gap: 10, paddingBottom: 20 },
   bubble: {

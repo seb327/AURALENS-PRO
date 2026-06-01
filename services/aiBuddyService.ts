@@ -5,6 +5,7 @@
 // We never send images, base64, or raw landmarks here — only the symbolic
 // reading context already derived by the engine.
 
+import Constants from 'expo-constants';
 import { hashString, mulberry32 } from '@/engine/scoring';
 import { getSupabase } from './supabase';
 import type {
@@ -13,6 +14,16 @@ import type {
   BuddyContext,
   BuddyTurn,
 } from '@/types/buddy';
+
+// If EXPO_PUBLIC_AI_BUDDY_URL is set (via app.config.ts → extra.aiBuddyUrl),
+// the client posts directly to that URL — useful when the LLM proxy is
+// deployed on Railway (or any other Node host) instead of Supabase Functions.
+// Falls back to sb.functions.invoke('ai-buddy') when unset.
+function getAiBuddyUrl(): string | null {
+  const extra = (Constants.expoConfig?.extra ?? {}) as { aiBuddyUrl?: string };
+  const url = (extra.aiBuddyUrl || process.env.EXPO_PUBLIC_AI_BUDDY_URL || '').trim();
+  return url.length > 0 ? url.replace(/\/+$/, '') : null;
+}
 
 // Forbidden keys we strip from any context object before sending. This is
 // belt-and-braces — the edge function also rejects them.
@@ -124,15 +135,36 @@ export const aiBuddyService = {
       history: safeHistory,
     };
 
+    const railwayUrl = getAiBuddyUrl();
+
     try {
-      const { data, error } = await sb.functions.invoke<AiBuddyResponse | { ok: false; error: string; rateLimited?: boolean; requiresMonthly?: boolean }>(
-        'ai-buddy',
-        { body: payload },
-      );
-      if (error) {
+      let data: any;
+      let errored = false;
+
+      if (railwayUrl) {
+        // Direct fetch to Railway (or any external Node host).
+        const res = await fetch(`${railwayUrl}/ai-buddy`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        try { data = await res.json(); } catch { errored = true; }
+        if (!res.ok && data && (data as any).ok !== false) errored = true;
+      } else {
+        // Default: Supabase Edge Function via the SDK.
+        const { data: invokeData, error } = await sb.functions.invoke<
+          AiBuddyResponse | { ok: false; error: string; rateLimited?: boolean; requiresMonthly?: boolean }
+        >('ai-buddy', { body: payload });
+        data = invokeData;
+        if (error) errored = true;
+      }
+
+      if (errored) {
         return { ok: true, response: localFallback(message, safeContext), source: 'fallback' };
       }
-      // Functions client returns either the parsed JSON or the error envelope.
       if (data && (data as any).ok === false) {
         const env = data as { error: string; rateLimited?: boolean; requiresMonthly?: boolean };
         return { ok: false, message: env.error, rateLimited: env.rateLimited, requiresMonthly: env.requiresMonthly };

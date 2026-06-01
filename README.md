@@ -99,7 +99,7 @@ See [docs/supabase-setup.md](docs/supabase-setup.md). Short version:
 - ✅ Restore + manual subscription refresh in Settings
 - ✅ Cancellation / pending / error / not-configured outcomes all surfaced with safe copy
 - ✅ Timeline + AI Buddy gated on `canAccessMonthlyFeatures`
-- ✅ Pricing screen pulls live prices from RC offerings when configured, falls back to `£0.99` / `£9.99/month`
+- ✅ Pricing screen pulls live prices from RC offerings when configured, falls back to `£1.99` / `£7.99/month`
 - ✅ Settings shows plan, credits, last sync, customer id, billing-configured flag; dev-only debug panel
 - ✅ Tests cover purchase success/cancel/pending/error, dedup of consumed transaction ids, restore monthly, dev-mode fallback, all gating helpers
 
@@ -107,10 +107,10 @@ See [docs/supabase-setup.md](docs/supabase-setup.md). Short version:
 
 1. Create a project at https://app.revenuecat.com
 2. Add products in App Store Connect and Google Play Console:
-   - `auralens_instant_reading_099` — Consumable, £0.99
-   - `auralens_monthly_999` — Auto-renewable subscription, £9.99/month
+   - `auralens_instant_reading_199` — Consumable, £1.99
+   - `auralens_monthly_799` — Auto-renewable subscription, £7.99/month
 3. In RevenueCat:
-   - Create an entitlement called `monthly` and attach `auralens_monthly_999` to it
+   - Create an entitlement called `monthly` and attach `auralens_monthly_799` to it
    - Create an offering (e.g. `default`) and add packages for both products
 4. Copy the iOS and Android **public SDK keys** from RevenueCat → API Keys
 5. Add to `.env`:

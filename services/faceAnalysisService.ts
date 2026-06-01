@@ -198,7 +198,7 @@ function clamp(n: number, min: number, max: number): number {
 
 async function hashUri(uri: string): Promise<string> {
   try {
-    const info = await FileSystem.getInfoAsync(uri, { size: true });
+    const info = await FileSystem.getInfoAsync(uri);
     const size = (info as any).size ?? 0;
     return hashString(`${uri}|${size}`).toString(16);
   } catch {
@@ -216,7 +216,7 @@ async function estimateBrightness(uri: string): Promise<number> {
       [{ resize: { width: 32 } }],
       { compress: 0.1, format: ImageManipulator.SaveFormat.JPEG, base64: false },
     );
-    const info = await FileSystem.getInfoAsync(r.uri, { size: true });
+    const info = await FileSystem.getInfoAsync(r.uri);
     const size = (info as any).size ?? 1000;
     // Map ~150B..~2500B → 0.15..0.85
     const norm = (size - 150) / (2500 - 150);
@@ -234,7 +234,7 @@ async function estimateDetail(uri: string): Promise<number> {
       [{ resize: { width: 128 } }],
       { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: false },
     );
-    const info = await FileSystem.getInfoAsync(r.uri, { size: true });
+    const info = await FileSystem.getInfoAsync(r.uri);
     const size = (info as any).size ?? 3000;
     // Map ~1500B..~15000B → 0.2..0.95
     const norm = (size - 1500) / (15000 - 1500);

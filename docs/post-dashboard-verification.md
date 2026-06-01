@@ -149,10 +149,10 @@ Scan the QR with the dev-client app (not Expo Go) on the device. The app boots i
 [`device-smoke-test.md`](./device-smoke-test.md) — open it on a second screen and tick every box.
 
 The most critical boxes:
-- [ ] Sandbox £0.99 purchase succeeds and grants 1 credit
+- [ ] Sandbox £1.99 purchase succeeds and grants 1 credit
 - [ ] Successful reading consumes that credit
 - [ ] **A failed-quality scan does NOT consume the credit** — this is the refund-safety invariant
-- [ ] Sandbox £9.99 purchase unlocks Timeline + Aura Buddy
+- [ ] Sandbox £7.99 purchase unlocks Timeline + Aura Buddy
 - [ ] Aura Buddy reply does **not** carry the "Local guidance (offline)" tag
 - [ ] Crisis phrase returns calm resources without an LLM call (verify by checking `[crisis_guardrail_triggered]` row in `ai_buddy_messages`)
 - [ ] Delete cloud account data → `select count(*) from readings where deleted_at is null` returns 0

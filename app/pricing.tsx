@@ -9,6 +9,7 @@ import { theme } from '@/constants/theme';
 import { PRODUCT_IDS, PRODUCT_CATALOG, type ProductId } from '@/constants/products';
 import { useEntitlementStore } from '@/store/useEntitlementStore';
 import { purchaseService } from '@/services/purchaseService';
+import { stripeService } from '@/services/stripeService';
 
 export default function Pricing() {
   const [busy, setBusy] = useState<ProductId | 'restore' | null>(null);
@@ -46,15 +47,29 @@ export default function Pricing() {
       Alert.alert('Purchase pending', res.message ?? 'Your purchase is being processed.');
       return;
     }
+    if (res.redirect && res.url) {
+      // Stripe Checkout — open the hosted URL. On web this navigates the same
+      // tab; on native the system browser opens. After payment Stripe redirects
+      // back with ?checkout=success and the webhook updates entitlements.
+      await stripeService.openCheckoutUrl(res.url);
+      return;
+    }
     if (!res.ok) {
+      if (res.requiresSignIn) {
+        Alert.alert(
+          'Sign in to purchase',
+          res.message ?? 'Your account holds your subscription.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign In', onPress: () => router.push('/auth') },
+          ],
+        );
+        return;
+      }
       Alert.alert('Purchase failed', res.message ?? 'Please try again.');
       return;
     }
-    if (productId === PRODUCT_IDS.monthly) {
-      router.replace('/scan');
-    } else {
-      router.replace('/scan');
-    }
+    router.replace('/scan');
   }
 
   async function doRestore() {
@@ -81,9 +96,6 @@ export default function Pricing() {
 
       <Text style={styles.title}>{copy.pricing.title}</Text>
       <Text style={styles.sub}>{copy.pricing.sub}</Text>
-      <Text style={styles.tierExplain}>
-        One-off readings are single-use. Monthly members unlock the aura timeline, comparison, and AI Buddy.
-      </Text>
 
       <GlassCard strong>
         <Text style={styles.tierTitle}>{copy.pricing.single.title}</Text>
@@ -105,15 +117,17 @@ export default function Pricing() {
           <View style={styles.badge}><Text style={styles.badgeText}>Recommended</Text></View>
         </View>
         <Text style={styles.price}>{prices[PRODUCT_IDS.monthly]}</Text>
+        <Text style={styles.whyMonthly}>{copy.pricing.monthly.whyMonthly}</Text>
         <Text style={styles.desc}>{copy.pricing.monthly.desc}</Text>
         <View style={styles.features}>
-          {copy.pricing.monthly.features.map((f) => <Feature key={f} label={f} />)}
+          {copy.pricing.monthly.features.map((f, i) => <Feature key={f} label={f} highlight={i < 2} />)}
         </View>
         {busy === PRODUCT_IDS.monthly ? (
           <ActivityIndicator color={theme.colors.auraGold} />
         ) : (
           <PremiumButton label={copy.pricing.monthly.cta} onPress={() => buy(PRODUCT_IDS.monthly)} />
         )}
+        <Text style={styles.cancelNote}>{copy.pricing.cancelNote}</Text>
       </GlassCard>
 
       <PremiumButton
@@ -134,11 +148,11 @@ export default function Pricing() {
   );
 }
 
-function Feature({ label }: { label: string }) {
+function Feature({ label, highlight }: { label: string; highlight?: boolean }) {
   return (
     <View style={styles.featureRow}>
       <Text style={styles.featureTick}>✦</Text>
-      <Text style={styles.featureText}>{label}</Text>
+      <Text style={[styles.featureText, highlight && styles.featureTextHighlight]}>{label}</Text>
     </View>
   );
 }
@@ -154,7 +168,10 @@ const styles = StyleSheet.create({
   features: { gap: 8, marginTop: theme.spacing.md, marginBottom: theme.spacing.lg },
   featureRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
   featureTick: { color: theme.colors.auraGold, marginTop: 2 },
-  featureText: { color: theme.colors.softWhite, fontSize: 14, flex: 1, lineHeight: 21 },
+  featureText: { color: theme.colors.mute, fontSize: 14, flex: 1, lineHeight: 21 },
+  featureTextHighlight: { color: theme.colors.softWhite, fontWeight: '500' },
+  whyMonthly: { color: theme.colors.auraGold, fontSize: 13, lineHeight: 20, marginTop: 8, fontStyle: 'italic' },
+  cancelNote: { color: theme.colors.dim, fontSize: 11, lineHeight: 16, marginTop: 14, textAlign: 'center' },
   recommendedRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   badge: {
     borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.auraGold,

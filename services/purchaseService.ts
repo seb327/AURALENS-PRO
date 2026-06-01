@@ -1,5 +1,6 @@
-// Domain-level purchase service. Sits on top of revenueCatService and turns
-// raw RC outcomes into the credit/entitlement model the rest of the app uses.
+// Domain-level purchase service. Routes to Stripe Checkout by default; the
+// RevenueCat path stays available for a future native iOS/Android build but is
+// only used when the Railway server URL is NOT configured (legacy/dev mode).
 
 import {
   getRevenueCat,
@@ -9,6 +10,7 @@ import {
   type RCOffering,
   type PurchaseOutcome,
 } from './revenueCatService';
+import { stripeService } from './stripeService';
 import { PRODUCT_IDS, PRODUCT_CATALOG, type ProductId } from '@/constants/products';
 
 export interface SyncedEntitlement {
@@ -24,7 +26,12 @@ export type PurchaseResult =
   | { kind: 'success'; productId: ProductId; entitlement: SyncedEntitlement }
   | { kind: 'cancelled' }
   | { kind: 'pending' }
-  | { kind: 'error'; message: string };
+  | { kind: 'redirect'; productId: ProductId; url: string }
+  | { kind: 'error'; message: string; requiresSignIn?: boolean };
+
+function toStripeProduct(productId: ProductId): 'single' | 'monthly' {
+  return productId === PRODUCT_IDS.monthly ? 'monthly' : 'single';
+}
 
 export const purchaseService = {
   async ensureConfigured(): Promise<boolean> {
@@ -54,10 +61,21 @@ export const purchaseService = {
   },
 
   async purchase(productId: ProductId, previouslyConsumedIds: string[]): Promise<PurchaseResult> {
+    // PRIMARY PATH: Stripe Checkout via the Railway server.
+    // The mobile/web client never holds the Stripe secret.
+    if (stripeService.isConfigured()) {
+      const res = await stripeService.createCheckout(toStripeProduct(productId));
+      if (!res.ok) {
+        return { kind: 'error', message: res.message, requiresSignIn: res.requiresSignIn };
+      }
+      return { kind: 'redirect', productId, url: res.url };
+    }
+
+    // FALLBACK PATH: RevenueCat (only kicks in if the server URL is unset).
     const rc = await getRevenueCat();
     if (!rc.isConfigured) {
-      // Local dev: synthesize a deterministic mock outcome so the rest of the
-      // app can be exercised without StoreKit/Play Billing.
+      // Local dev with no server URL and no RC: synthesize a deterministic
+      // mock outcome so the rest of the app can be exercised offline.
       const mock = buildMockOutcome(productId);
       return {
         kind: 'success',

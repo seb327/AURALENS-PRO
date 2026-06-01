@@ -4,6 +4,8 @@
 // the components — react-native-testing-library would pull RN's full runtime
 // into jest-expo, which is overkill for what we want to enforce here.
 
+/// <reference types="node" />
+/// <reference types="jest" />
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 

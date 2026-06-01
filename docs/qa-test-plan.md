@@ -13,11 +13,11 @@ Run before every preview / production build. Tick each item on a clean device, t
 - [ ] *Try Now* navigates to `/technology`
 - [ ] Technology cards render with body text
 - [ ] *See Pricing* navigates to `/pricing`
-- [ ] Live RC prices appear (when configured); fallback `£0.99` / `£9.99/month` appears in dev
+- [ ] Live RC prices appear (when configured); fallback `£1.99` / `£7.99/month` appears in dev
 - [ ] *Recommended* badge on monthly card
 
 ## Purchases
-- [ ] One-off purchase (£0.99) succeeds in dev (mock) and grants 1 credit
+- [ ] One-off purchase (£1.99) succeeds in dev (mock) and grants 1 credit
 - [ ] Sandbox / Play test purchase succeeds in TestFlight / internal track
 - [ ] Cancelling the iOS / Play sheet shows no error, credit unchanged
 - [ ] Subscribing to monthly grants `hasMonthly = true`

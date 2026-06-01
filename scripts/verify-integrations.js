@@ -33,6 +33,63 @@ const args = process.argv.slice(2);
 const liveArg = args.find((a) => a.startsWith('--live='));
 const LIVE_PROFILE = liveArg ? liveArg.split('=')[1] : null;
 
+// ─── JWT-role guard ──────────────────────────────────────────────────────────
+// Anything in a *.env file under an EXPO_PUBLIC_* slot will be bundled into
+// the mobile binary and shipped to every device. If a Supabase JWT in such a
+// slot carries the `service_role` claim, the database's RLS is fully bypassed
+// for every user that downloads the app. This guard refuses to let that ship.
+
+function decodeJwtPayload(jwt) {
+  if (typeof jwt !== 'string' || !jwt.startsWith('eyJ') || jwt.split('.').length !== 3) {
+    return null;
+  }
+  try {
+    const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+  } catch { return null; }
+}
+
+const FORBIDDEN_PUBLIC_VALUES = [
+  // Substring matches that must never appear in an EXPO_PUBLIC_* value.
+  // (We can't blanket-ban "sk-" because that would catch legitimate tokens
+  // — these are exact server-only credential patterns.)
+  { name: 'Anthropic API key',         re: /^sk-ant-/ },
+  { name: 'OpenAI API key',            re: /^sk-(?:proj-|svcacct-|None-)?[A-Za-z0-9]{40,}/ },
+  { name: 'Stripe secret key',         re: /^sk_(?:test|live)_[A-Za-z0-9]{16,}/ },
+  { name: 'Stripe restricted key',     re: /^rk_(?:test|live)_[A-Za-z0-9]{16,}/ },
+  { name: 'Stripe webhook secret',     re: /^whsec_[A-Za-z0-9]{16,}/ },
+];
+// Note: Stripe PUBLISHABLE keys (`pk_test_…` / `pk_live_…`) are SAFE in
+// EXPO_PUBLIC_* slots — they're designed to ship to clients. Do not add them
+// to the forbidden list.
+
+function scanEnvForLeaks(envFile, txt) {
+  const findings = [];
+  for (const line of txt.split(/\r?\n/)) {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (!m) continue;
+    const [, key, value] = m;
+    if (!value) continue;
+    if (!key.startsWith('EXPO_PUBLIC_')) continue; // we only police public slots here
+
+    // JWT role check
+    const payload = decodeJwtPayload(value);
+    if (payload && payload.role && payload.role !== 'anon') {
+      findings.push(`SECURITY: ${envFile} ${key} contains a JWT with role="${payload.role}". ` +
+        `Only role="anon" is safe in EXPO_PUBLIC_* slots. ` +
+        `Service-role keys go on the EDGE FUNCTION via "supabase secrets set", never in any .env loaded by Expo.`);
+    }
+
+    // Direct LLM-key check
+    for (const f of FORBIDDEN_PUBLIC_VALUES) {
+      if (f.re.test(value)) {
+        findings.push(`SECURITY: ${envFile} ${key} looks like an ${f.name}. Server-only — must NOT be in any EXPO_PUBLIC_* slot.`);
+      }
+    }
+  }
+  return findings;
+}
+
 const pass = [];
 const fail = [];
 const warn = [];
@@ -65,6 +122,59 @@ for (const f of ['.env.example', '.env.development.example', '.env.preview.examp
   ok(`Env template scanned: ${f}`);
 }
 
+// ── 1b. Scan actual .env files (if present) for JWT-role leaks ──────────────
+// Templates are never expected to contain secrets, but the real .env / .env.<profile>
+// loaded by Expo MUST NOT have a service_role JWT or LLM key in any EXPO_PUBLIC_* slot.
+for (const f of ['.env', '.env.local', '.env.development', '.env.preview', '.env.production']) {
+  if (!exists(f)) continue;
+  const findings = scanEnvForLeaks(f, read(f));
+  if (findings.length === 0) { ok(`Env file safe: ${f}`); continue; }
+  for (const finding of findings) bad(finding);
+}
+
+// ── 1c. Inspect the rendered Expo public config via `npx expo config` ──────
+// This is the bytes that actually ship in the binary. Anything sensitive here
+// is a build-time leak. Only checked if `node_modules/expo` is installed.
+try {
+  if (exists('node_modules/expo/package.json')) {
+    const { execSync } = require('node:child_process');
+    const out = execSync('npx --no-install expo config --type public --json', {
+      cwd: ROOT,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+    const cfg = JSON.parse(out);
+    const extra = cfg?.extra ?? {};
+    const stringValues = (obj) => {
+      const out = [];
+      const walk = (v) => {
+        if (typeof v === 'string') out.push(v);
+        else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+      };
+      walk(obj);
+      return out;
+    };
+    let leakCount = 0;
+    for (const v of stringValues(cfg)) {
+      const payload = decodeJwtPayload(v);
+      if (payload?.role && payload.role !== 'anon') {
+        bad(`SECURITY: Rendered Expo config contains a JWT with role="${payload.role}". This will ship to every device.`);
+        leakCount++;
+      }
+      for (const f of FORBIDDEN_PUBLIC_VALUES) {
+        if (f.re.test(v)) {
+          bad(`SECURITY: Rendered Expo config contains a string matching ${f.name}. This will ship to every device.`);
+          leakCount++;
+        }
+      }
+    }
+    if (leakCount === 0) ok(`Rendered Expo public config: no server-only secrets detected (extra keys: ${Object.keys(extra).join(', ')})`);
+  }
+} catch (e) {
+  // Non-fatal — `expo config` may not run in CI without a full install.
+  wn(`Skipped rendered-config scan: ${(e && e.message) ? e.message.split('\n')[0] : e}`);
+}
+
 // ── 2. .env.example documents server-only LLM vars distinctly ─────────────
 const exTxt = read('.env.example');
 for (const v of SERVER_ONLY_VARS) {
@@ -72,8 +182,12 @@ for (const v of SERVER_ONLY_VARS) {
   else ok(`Server-only var documented: ${v}`);
 }
 
-// ── 3. app.config.ts exposes every public extra ──────────────────────────
-const appCfg = read('app.config.ts');
+// ── 3. app.config.(js|ts) exposes every public extra ────────────────────
+const appCfgPath = exists('app.config.js') ? 'app.config.js'
+  : exists('app.config.ts') ? 'app.config.ts'
+  : null;
+if (!appCfgPath) bad('Missing app.config — neither app.config.js nor app.config.ts found');
+const appCfg = appCfgPath ? read(appCfgPath) : '';
 const EXTRA_MAP = {
   'appDisplayName':       /APP_DISPLAY_NAME/,
   'supabaseUrl':          /EXPO_PUBLIC_SUPABASE_URL/,
@@ -82,8 +196,8 @@ const EXTRA_MAP = {
   'revenueCatAndroidKey': /REVENUECAT_ANDROID_KEY/,
 };
 for (const [key, re] of Object.entries(EXTRA_MAP)) {
-  if (!appCfg.includes(key) || !re.test(appCfg)) bad(`app.config.ts missing extra: ${key}`);
-  else ok(`app.config.ts extra wired: ${key}`);
+  if (!appCfg.includes(key) || !re.test(appCfg)) bad(`${appCfgPath} missing extra: ${key}`);
+  else ok(`${appCfgPath} extra wired: ${key}`);
 }
 
 // ── 4. SQL migrations + RLS ──────────────────────────────────────────────
@@ -133,7 +247,7 @@ for (const [needle, label] of PIPELINE) {
 
 // ── 6. Product IDs are consistent ────────────────────────────────────────
 const products = read('constants/products.ts');
-const EXPECTED_PRODUCT_IDS = ['auralens_instant_reading_099', 'auralens_monthly_999'];
+const EXPECTED_PRODUCT_IDS = ['auralens_instant_reading_199', 'auralens_monthly_799'];
 for (const p of EXPECTED_PRODUCT_IDS) {
   if (!products.includes(`'${p}'`)) bad(`constants/products.ts missing product ID: ${p}`);
   else ok(`Product ID present: ${p}`);
@@ -146,7 +260,7 @@ if (!new RegExp(`monthly:\\s*['"]${ENTITLEMENT_ID}['"]`).test(products)) {
 // ── 7. Bundle IDs consistent across files ────────────────────────────────
 const bundleRe = /com\.vybstak\.auralens(?:\.\w+)?/g;
 const expectedBundle = 'com.vybstak.auralens';
-const filesToCheck = ['app.config.ts', 'eas.json', '.env.example', '.env.development.example', '.env.preview.example', '.env.production.example'];
+const filesToCheck = [appCfgPath, 'eas.json', '.env.example', '.env.development.example', '.env.preview.example', '.env.production.example'].filter(Boolean);
 for (const f of filesToCheck) {
   if (!exists(f)) continue;
   const txt = read(f);

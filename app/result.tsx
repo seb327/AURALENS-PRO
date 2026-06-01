@@ -51,22 +51,30 @@ export default function Result() {
       </View>
 
       <GlassCard strong>
-        <Text style={styles.label}>{r.label}</Text>
-        <Text style={styles.scoreRow}>
+        <Text style={styles.label}>{r.label.toUpperCase()}</Text>
+        <View style={styles.scoreRow}>
           <Text style={styles.score}>{r.score}</Text>
           <Text style={styles.scoreOf}> / 100</Text>
-        </Text>
-        <View style={styles.metaRow}>
-          <Meta k="Dominant" v={r.dominantColour} />
-          <Meta k="Secondary" v={r.secondaryColour} />
-          <Meta k="Element" v={r.element} />
-          <Meta k="Confidence" v={`${r.confidence}%`} />
         </View>
+        <Text style={styles.signature}>
+          {r.dominantColour} signature · {r.element} element · {r.confidence}% confidence
+        </Text>
       </GlassCard>
 
+      {hasMonthly ? (
+        <PremiumButton label={copy.result.askBuddy} onPress={() => router.push('/buddy')} />
+      ) : (
+        <GlassCard>
+          <Text style={styles.unlockTitle}>{copy.result.unlockTitle}</Text>
+          <Text style={styles.unlockBody}>{copy.result.unlockBody}</Text>
+          <View style={{ height: 12 }} />
+          <PremiumButton label={copy.result.unlockCta} onPress={() => router.push('/pricing')} />
+        </GlassCard>
+      )}
+
       <GlassCard>
-        <Text style={styles.sectionTitle}>Guidance</Text>
-        <Text style={styles.body}>{reading.guidance.summary}</Text>
+        <Text style={styles.sectionTitle}>Your guidance</Text>
+        <Text style={styles.summary}>{reading.guidance.summary}</Text>
         <Text style={styles.subSection}>Maintain</Text>
         {reading.guidance.maintainGoodEnergy.map((g) => (
           <Bullet key={g} label={g} colour={theme.colors.auraGreen} />
@@ -82,7 +90,7 @@ export default function Result() {
       </GlassCard>
 
       <GlassCard>
-        <Text style={styles.sectionTitle}>Mien Shiang Zones</Text>
+        <Text style={styles.sectionTitle}>Mien Shiang zones</Text>
         {zones.map(([k, z]) => (
           <View key={k} style={styles.zoneRow}>
             <View style={styles.zoneHead}>
@@ -98,35 +106,16 @@ export default function Result() {
         ))}
       </GlassCard>
 
-      {hasMonthly ? (
-        <PremiumButton label="Ask Aura Buddy about this reading" onPress={() => router.push('/buddy')} />
-      ) : (
-        <GlassCard>
-          <Text style={styles.unlockTitle}>Unlock Aura Buddy</Text>
-          <Text style={styles.unlockBody}>
-            AuraLens Monthly includes Aura Buddy — a calm companion who reflects on your reading and offers practical daily practices.
-          </Text>
-          <View style={{ height: 12 }} />
-          <PremiumButton label="See Monthly" onPress={() => router.push('/pricing')} />
-        </GlassCard>
-      )}
-      <PremiumButton label="Share Reading" onPress={share} variant="ghost" />
-      <PremiumButton label="Start Another Reading" onPress={() => router.replace('/scan')} variant="ghost" />
+      <View style={styles.secondaryActions}>
+        <PremiumButton label={copy.result.share} onPress={share} variant="ghost" style={styles.secondaryBtn} />
+        <PremiumButton label={copy.result.again} onPress={() => router.replace('/scan')} variant="ghost" style={styles.secondaryBtn} />
+      </View>
 
       <Text style={styles.syncTag}>
         {cloudOn ? (syncedThisReading ? '☁ Synced to your account' : '☁ Saving to cloud…') : '✓ Saved on this device'}
       </Text>
       <Text style={styles.dis}>{reading.disclaimer}</Text>
     </ScreenContainer>
-  );
-}
-
-function Meta({ k, v }: { k: string; v: string }) {
-  return (
-    <View style={styles.metaItem}>
-      <Text style={styles.metaK}>{k}</Text>
-      <Text style={styles.metaV}>{v}</Text>
-    </View>
   );
 }
 
@@ -157,17 +146,17 @@ const styles = StyleSheet.create({
   heroOrb: { alignItems: 'center', marginTop: -8 },
   label: {
     color: theme.colors.auraGold,
-    letterSpacing: 3,
-    fontSize: 12,
-    textTransform: 'uppercase',
+    letterSpacing: 4,
+    fontSize: 16,
+    fontWeight: '600',
   },
-  scoreRow: { marginTop: 6 },
-  score: { color: theme.colors.softWhite, fontSize: 56, fontWeight: '200', letterSpacing: -1 },
-  scoreOf: { color: theme.colors.dim, fontSize: 16 },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 16 },
-  metaItem: { flexBasis: '40%' },
-  metaK: { color: theme.colors.dim, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase' },
-  metaV: { color: theme.colors.softWhite, fontSize: 15, marginTop: 2 },
+  scoreRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 10 },
+  score: { color: theme.colors.softWhite, fontSize: 72, fontWeight: '200', letterSpacing: -2 },
+  scoreOf: { color: theme.colors.dim, fontSize: 18 },
+  signature: { color: theme.colors.mute, fontSize: 13, marginTop: 8, letterSpacing: 0.4 },
+  summary: { color: theme.colors.softWhite, fontSize: 15, lineHeight: 23, marginBottom: 12 },
+  secondaryActions: { flexDirection: 'row', gap: 10 },
+  secondaryBtn: { flex: 1 },
   sectionTitle: { color: theme.colors.softWhite, fontSize: 18, fontWeight: '500', marginBottom: 10 },
   subSection: { color: theme.colors.auraGold, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginTop: 14, marginBottom: 6 },
   body: { color: theme.colors.softWhite, fontSize: 14, lineHeight: 22 },

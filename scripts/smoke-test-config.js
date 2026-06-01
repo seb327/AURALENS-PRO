@@ -20,10 +20,39 @@ const envFile = profile ? `.env.${profile}` : '.env';
 const envPath = path.join(ROOT, envFile);
 
 const env = {};
+const securityWarnings = [];
+
+function decodeJwtRole(jwt) {
+  if (typeof jwt !== 'string' || !jwt.startsWith('eyJ') || jwt.split('.').length !== 3) return null;
+  try {
+    const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(b64, 'base64').toString('utf8')).role ?? null;
+  } catch { return null; }
+}
+
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
     const m = line.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/);
-    if (m) env[m[1]] = m[2].trim();
+    if (!m) continue;
+    const [, k, v] = m;
+    env[k] = v.trim();
+
+    // Guardrail: any JWT in an EXPO_PUBLIC_* slot must have role="anon".
+    if (k.startsWith('EXPO_PUBLIC_')) {
+      const role = decodeJwtRole(env[k]);
+      if (role && role !== 'anon') {
+        securityWarnings.push(`⚠  ${envFile} ${k} contains a JWT with role="${role}". Only role="anon" belongs in EXPO_PUBLIC_* slots.`);
+      }
+      if (/^sk-ant-/.test(env[k]) || /^sk-(?:proj-|svcacct-|None-)?[A-Za-z0-9]{40,}/.test(env[k])) {
+        securityWarnings.push(`⚠  ${envFile} ${k} looks like an LLM API key. Server-only — never EXPO_PUBLIC_*.`);
+      }
+      if (/^sk_(?:test|live)_[A-Za-z0-9]{16,}/.test(env[k])) {
+        securityWarnings.push(`⚠  ${envFile} ${k} looks like a Stripe SECRET key. Stripe secrets belong on Railway, never EXPO_PUBLIC_*.`);
+      }
+      if (/^whsec_[A-Za-z0-9]{16,}/.test(env[k])) {
+        securityWarnings.push(`⚠  ${envFile} ${k} looks like a Stripe WEBHOOK secret. Belongs on Railway only.`);
+      }
+    }
   }
 }
 
@@ -72,6 +101,14 @@ for (const s of subsystems) {
 console.log('─'.repeat(78));
 const live = subsystems.filter((s) => /LIVE/.test(s.mode) || /CONFIGURED/.test(s.mode)).length;
 console.log(`Live subsystems: ${live} / ${subsystems.length}`);
+
+if (securityWarnings.length > 0) {
+  console.log();
+  console.log('SECURITY:');
+  for (const w of securityWarnings) console.log('  ' + w);
+  console.log();
+  process.exitCode = 2; // signal to CI / caller without throwing
+}
 console.log();
 if (!fs.existsSync(envPath)) {
   console.log(`Tip: copy a template and fill it.`);

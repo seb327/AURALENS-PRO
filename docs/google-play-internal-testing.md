@@ -28,13 +28,13 @@ Testers install via the opt-in URL on the Play Store; the build appears within m
 
 | Product ID                         | Type                | Price       | Status |
 |------------------------------------|---------------------|-------------|--------|
-| `auralens_instant_reading_099`     | Consumable          | £0.99       | Active |
+| `auralens_instant_reading_199`     | Consumable          | £1.99       | Active |
 
 *Monetise → Products → Subscriptions → Create subscription*
 
 | Subscription ID                | Base plan | Price        |
 |--------------------------------|-----------|--------------|
-| `auralens_monthly_999`         | `monthly` | £9.99/month  |
+| `auralens_monthly_799`         | `monthly` | £7.99/month  |
 
 Both must be *Active* before testers can purchase.
 

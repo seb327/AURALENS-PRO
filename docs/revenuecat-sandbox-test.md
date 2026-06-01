@@ -1,6 +1,6 @@
 # RevenueCat sandbox test
 
-Goal: prove that the £0.99 instant reading and £9.99/month subscription unlock the right entitlements in sandbox, on real devices. Estimated time: 45 minutes the first time (most of it is App Store Connect / Play Console waiting).
+Goal: prove that the £1.99 instant reading and £7.99/month subscription unlock the right entitlements in sandbox, on real devices. Estimated time: 45 minutes the first time (most of it is App Store Connect / Play Console waiting).
 
 ## Prerequisites
 - App Store Connect access (Apple Developer Program)
@@ -42,8 +42,8 @@ Goal: prove that the £0.99 instant reading and £9.99/month subscription unlock
 
 | Product ID                          | Type                            | Price |
 |-------------------------------------|---------------------------------|-------|
-| `auralens_instant_reading_099`      | Consumable                      | £0.99 |
-| `auralens_monthly_999`              | Auto-Renewable Subscription     | £9.99/month |
+| `auralens_instant_reading_199`      | Consumable                      | £1.99 |
+| `auralens_monthly_799`              | Auto-Renewable Subscription     | £7.99/month |
 
 For the subscription:
 - Subscription group: `auralens_main`
@@ -51,16 +51,16 @@ For the subscription:
 - Submit for review (or leave as *Ready to Submit*)
 
 ### Google Play Console
-- *Monetise → Products → In-app products*: `auralens_instant_reading_099` (Managed, Consumable)
-- *Monetise → Products → Subscriptions*: `auralens_monthly_999` with a `monthly` base plan
+- *Monetise → Products → In-app products*: `auralens_instant_reading_199` (Managed, Consumable)
+- *Monetise → Products → Subscriptions*: `auralens_monthly_799` with a `monthly` base plan
 - Set both to **Active**
 
 ## 5. Wire products in RevenueCat
 1. RevenueCat → *Products → New* — add both product IDs (separate rows for iOS + Android)
-2. *Entitlements → New* → `monthly` → attach `auralens_monthly_999` (iOS + Android)
+2. *Entitlements → New* → `monthly` → attach `auralens_monthly_799` (iOS + Android)
 3. *Offerings → default → Packages → New*:
-   - `$rc_lifetime` → `auralens_instant_reading_099`
-   - `$rc_monthly` → `auralens_monthly_999`
+   - `$rc_lifetime` → `auralens_instant_reading_199`
+   - `$rc_monthly` → `auralens_monthly_799`
 
 ## 6. Add the keys to AuraLens
 ```bash
@@ -98,7 +98,7 @@ Run the dev build (`npx expo start --dev-client`). On the Pricing screen the "Re
    - App pushes to /scan
    - Settings → Reading credits: **1**
    - Settings → Plan: *Single readings*
-   - RevenueCat dashboard → Customers shows the device's anonymous ID with `auralens_instant_reading_099` in non-subscription transactions
+   - RevenueCat dashboard → Customers shows the device's anonymous ID with `auralens_instant_reading_199` in non-subscription transactions
 
 ## 10. Test successful reading consumes one credit
 1. Complete a scan

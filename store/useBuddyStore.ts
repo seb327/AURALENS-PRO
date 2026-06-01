@@ -59,8 +59,8 @@ export const useBuddyStore = create<BuddyState>((set, get) => ({
       role: 'buddy',
       at: new Date().toISOString(),
       content: reading
-        ? `Hi, I'm Aura Buddy. I can see your most recent reading was ${reading.auraResult.label.toLowerCase()} with a ${reading.auraResult.dominantColour.toLowerCase()} signature. What is on your mind today?`
-        : `Hi, I'm Aura Buddy. I'm here for reflection and small practical practices, not medical or psychological advice. Start a reading first and I'll have more to reflect with you.`,
+        ? `Welcome back. I can see your most recent reading came through as ${reading.auraResult.label.toLowerCase()} with a ${reading.auraResult.dominantColour.toLowerCase()} signature. What feels most alive in your day so far?`
+        : `Hi — I'm Aura Buddy. I reflect on your aura readings with small, practical practices. Take a reading whenever you're ready and we'll explore it together. In the meantime, what is on your mind?`,
       tone: 'calm',
     };
     set({ messages: [intro] });

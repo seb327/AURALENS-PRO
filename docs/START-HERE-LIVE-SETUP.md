@@ -125,8 +125,8 @@ https://appstoreconnect.apple.com → *My Apps → +*
 
 | Type | Product ID | Price |
 |------|------------|-------|
-| Consumable | `auralens_instant_reading_099` | £0.99 |
-| Auto-Renewable Subscription | `auralens_monthly_999` | £9.99/month |
+| Consumable | `auralens_instant_reading_199` | £1.99 |
+| Auto-Renewable Subscription | `auralens_monthly_799` | £7.99/month |
 
 For the subscription, create subscription group `auralens_main`, duration 1 month.
 
@@ -162,11 +162,11 @@ https://play.google.com/console → *Create app*
 ### 5c. Create the two products
 
 *Monetise → Products → In-app products → Create product*
-- Product ID: `auralens_instant_reading_099` · Type: Managed product · Consumable
-- Price: £0.99 · Status: **Active**
+- Product ID: `auralens_instant_reading_199` · Type: Managed product · Consumable
+- Price: £1.99 · Status: **Active**
 
 *Monetise → Products → Subscriptions → Create subscription*
-- Product ID: `auralens_monthly_999` · Base plan ID: `monthly` · Price: £9.99/month · Status: **Active**
+- Product ID: `auralens_monthly_799` · Base plan ID: `monthly` · Price: £7.99/month · Status: **Active**
 
 ### 5d. Internal testing track
 *Testing → Internal testing → Create new release* (you'll upload an AAB here later)
@@ -204,18 +204,18 @@ https://app.revenuecat.com → **New project** → AuraLens
 
 ### 6c. Create products
 *Products → New* — create one row per platform per product ID:
-- iOS `auralens_instant_reading_099`
-- Android `auralens_instant_reading_099`
-- iOS `auralens_monthly_999`
-- Android `auralens_monthly_999`
+- iOS `auralens_instant_reading_199`
+- Android `auralens_instant_reading_199`
+- iOS `auralens_monthly_799`
+- Android `auralens_monthly_799`
 
 ### 6d. Create the `monthly` entitlement
-*Entitlements → New* → identifier `monthly` → attach both `auralens_monthly_999` products
+*Entitlements → New* → identifier `monthly` → attach both `auralens_monthly_799` products
 
 ### 6e. Create the `default` offering
 *Offerings → default → Packages → New*:
-- `$rc_lifetime` → attach the `auralens_instant_reading_099` products
-- `$rc_monthly` → attach the `auralens_monthly_999` products
+- `$rc_lifetime` → attach the `auralens_instant_reading_199` products
+- `$rc_monthly` → attach the `auralens_monthly_799` products
 
 ### 6f. Grab the SDK keys
 *Project settings → API keys* — copy:
@@ -315,7 +315,7 @@ EAS gives you a build link or an APK. Install via:
 
 Print [`device-smoke-test.md`](./device-smoke-test.md). Walk every box on both an iOS and an Android device. The tests prove:
 
-1. Sandbox IAP works (£0.99 + £9.99)
+1. Sandbox IAP works (£1.99 + £7.99)
 2. Refund safety: a failed reading does **not** consume a credit
 3. Supabase sync writes real rows
 4. Photo upload (opt-in) lands in the private bucket

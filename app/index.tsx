@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PremiumButton } from '@/components/PremiumButton';
+import { DevTestPanel } from '@/components/DevTestPanel';
 import { APP_DISPLAY_NAME, copy } from '@/constants/copy';
 import { theme } from '@/constants/theme';
 
@@ -21,10 +22,10 @@ export default function Hero() {
 
       <View style={styles.ctaBlock}>
         <PremiumButton label={copy.hero.cta} onPress={() => router.push('/technology')} />
-        <PremiumButton label={copy.hero.restoreCta} onPress={() => router.push('/settings')} variant="subtle" />
+        <Text style={styles.trust}>{copy.hero.trust}</Text>
       </View>
 
-      <Text style={styles.foot}>{copy.disclaimers.short}</Text>
+      <DevTestPanel defaultOpen />
     </ScreenContainer>
   );
 }
@@ -47,37 +48,38 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   hero: {
-    marginTop: theme.spacing.xxxl,
-    gap: theme.spacing.md,
+    marginTop: theme.spacing.xxxl + 16,
+    gap: theme.spacing.lg,
   },
   eyebrow: {
     color: theme.colors.auraGold,
-    letterSpacing: 3,
+    letterSpacing: 3.5,
     fontSize: 11,
-    textTransform: 'uppercase',
+    fontWeight: '600',
   },
   title: {
     color: theme.colors.softWhite,
-    fontSize: theme.size.h1,
-    lineHeight: 46,
+    fontSize: 44,
+    lineHeight: 50,
     fontWeight: '300',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
+    marginTop: 6,
   },
   sub: {
     color: theme.colors.mute,
-    fontSize: theme.size.body,
+    fontSize: 16,
     lineHeight: 24,
-    marginTop: theme.spacing.sm,
+    marginTop: 10,
   },
   ctaBlock: {
-    marginTop: theme.spacing.xxxl,
-    gap: theme.spacing.md,
+    marginTop: theme.spacing.xxxl + 24,
+    gap: 14,
   },
-  foot: {
+  trust: {
     color: theme.colors.dim,
     fontSize: theme.size.micro,
     textAlign: 'center',
-    marginTop: theme.spacing.xl,
     lineHeight: 16,
+    letterSpacing: 0.4,
   },
 });

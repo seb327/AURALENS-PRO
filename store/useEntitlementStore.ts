@@ -23,7 +23,15 @@ export interface EntitlementState {
 
   hydrate: () => Promise<void>;
   refresh: () => Promise<void>;
-  purchase: (productId: ProductId) => Promise<{ ok: boolean; message?: string; cancelled?: boolean; pending?: boolean }>;
+  purchase: (productId: ProductId) => Promise<{
+    ok: boolean;
+    message?: string;
+    cancelled?: boolean;
+    pending?: boolean;
+    redirect?: boolean;
+    url?: string;
+    requiresSignIn?: boolean;
+  }>;
   restore: () => Promise<{ ok: boolean; recoveredMonthly: boolean }>;
   consumeOneCredit: () => Promise<boolean>;
   refundOneCredit: () => Promise<void>;
@@ -140,9 +148,14 @@ export const useEntitlementStore = create<EntitlementState>((set, get) => ({
       set({ isLoading: false });
       return { ok: false, pending: true, message: 'Your purchase is pending. We will unlock as soon as it clears.' };
     }
+    if (res.kind === 'redirect') {
+      // Stripe Checkout — caller is responsible for opening the URL.
+      set({ isLoading: false });
+      return { ok: false, redirect: true, url: res.url };
+    }
     if (res.kind === 'error') {
       set({ isLoading: false, error: res.message });
-      return { ok: false, message: res.message };
+      return { ok: false, message: res.message, requiresSignIn: res.requiresSignIn };
     }
 
     const next = applySynced(

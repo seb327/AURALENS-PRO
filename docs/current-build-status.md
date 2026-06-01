@@ -68,7 +68,7 @@ The minimum dashboard work to flip every subsystem to live is documented step-by
 
 ## What requires real device testing
 
-- Real money pathways: sandbox £0.99 + £9.99 purchases on iOS sandbox and Android License Tester accounts
+- Real money pathways: sandbox £1.99 + £7.99 purchases on iOS sandbox and Android License Tester accounts
 - Restore Purchases against a freshly reinstalled binary
 - Real camera + photo permissions on hardware
 - Real ML Kit face landmarks on hardware (if added)
@@ -82,7 +82,7 @@ All of this is enumerated in [`device-smoke-test.md`](./device-smoke-test.md) as
 
 - Apple privacy nutrition labels accepted on review
 - Google Play Data Safety form accepted on review
-- Reviewer flow on the £0.99 consumable and £9.99 auto-renewable
+- Reviewer flow on the £1.99 consumable and £7.99 auto-renewable
 - TestFlight build distribution to internal testers
 - Play internal track opt-in distribution
 - App Store / Play screenshot acceptance (mock frames will need to be replaced first)

@@ -43,7 +43,7 @@ function relExists(rel, minBytes = 1) {
 
 // ── 1. Required config files ─────────────────────────────────────────────
 const requiredFiles = [
-  'package.json', 'app.config.ts', 'eas.json', 'tsconfig.json',
+  'package.json', 'eas.json', 'tsconfig.json',
   'babel.config.js', 'metro.config.js', 'jest.setup.js',
   'README.md', '.gitignore', '.env.example',
   '.env.development.example', '.env.preview.example', '.env.production.example',
@@ -145,17 +145,21 @@ for (const dep of required) {
   else ok(`Dependency: ${dep}@${pkg.dependencies[dep]}`);
 }
 
-// ── 4. app.config.ts loads ──────────────────────────────────────────────
+// ── 4. app.config.(js|ts) loads ─────────────────────────────────────────
 try {
-  // Cheap textual check — actually evaluating .ts here would need ts-node.
-  const txt = fs.readFileSync(path.join(ROOT, 'app.config.ts'), 'utf8');
-  if (!/export default/.test(txt)) bad('app.config.ts has no default export');
-  else ok('app.config.ts default export present');
+  const appCfgPath = fs.existsSync(path.join(ROOT, 'app.config.js')) ? 'app.config.js'
+    : fs.existsSync(path.join(ROOT, 'app.config.ts')) ? 'app.config.ts'
+    : null;
+  if (!appCfgPath) { bad('Missing app.config (neither .js nor .ts found)'); throw new Error('no config'); }
+  const txt = fs.readFileSync(path.join(ROOT, appCfgPath), 'utf8');
+  const hasExport = /(?:export default|module\.exports\s*=)/.test(txt);
+  if (!hasExport) bad(`${appCfgPath} has no default export / module.exports`);
+  else ok(`${appCfgPath} default export present`);
   for (const needle of ['NSCameraUsageDescription', 'NSPhotoLibraryUsageDescription', 'adaptiveIcon']) {
-    if (!txt.includes(needle)) bad(`app.config.ts missing ${needle}`);
-    else ok(`app.config.ts contains ${needle}`);
+    if (!txt.includes(needle)) bad(`${appCfgPath} missing ${needle}`);
+    else ok(`${appCfgPath} contains ${needle}`);
   }
-  // Verify the asset paths referenced in app.config.ts actually exist on disk.
+  // Verify the asset paths referenced in the app config actually exist on disk.
   const ASSET_PATH_RE = /['"`](\.\/assets\/[A-Za-z0-9_./-]+\.png)['"`]/g;
   const seen = new Set();
   let m;
@@ -164,11 +168,11 @@ try {
     if (seen.has(rel)) continue;
     seen.add(rel);
     const abs = path.join(ROOT, rel);
-    if (!fs.existsSync(abs)) bad(`app.config.ts references missing asset: ${rel}`);
-    else ok(`app.config.ts asset reference resolves: ${rel}`);
+    if (!fs.existsSync(abs)) bad(`${appCfgPath} references missing asset: ${rel}`);
+    else ok(`${appCfgPath} asset reference resolves: ${rel}`);
   }
 } catch (e) {
-  bad(`Cannot read app.config.ts: ${e.message}`);
+  if (!/no config/.test(e.message)) bad(`Cannot read app config: ${e.message}`);
 }
 
 // ── 5. eas.json parses + profiles ───────────────────────────────────────

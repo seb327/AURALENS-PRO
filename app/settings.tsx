@@ -11,6 +11,7 @@ import { useEntitlementStore } from '@/store/useEntitlementStore';
 import { useReadingStore } from '@/store/useReadingStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useBuddyStore } from '@/store/useBuddyStore';
+import { DevTestPanel } from '@/components/DevTestPanel';
 
 const IS_DEV = __DEV__;
 
@@ -27,6 +28,7 @@ export default function Settings() {
 
   const [restoring, setRestoring] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
 
   async function doRestore() {
     setRestoring(true);
@@ -98,6 +100,8 @@ export default function Settings() {
       </View>
       <Text style={styles.title}>Settings</Text>
 
+      <DevTestPanel defaultOpen />
+
       <GlassCard strong>
         <Row k="App" v={APP_DISPLAY_NAME} />
         <Row k="Plan" v={ent.hasMonthly ? 'Monthly' : ent.readingCredits > 0 ? 'Single readings' : 'No active plan'} />
@@ -146,7 +150,9 @@ export default function Settings() {
           <PremiumButton label="Sync Now" onPress={doSyncNow} variant="ghost" disabled={readings.syncing} />
           {readings.lastSync && (
             <Text style={styles.subtle}>
-              {readings.lastSync.status.toUpperCase()} · pushed {readings.lastSync.pushed} · pulled {readings.lastSync.pulled} · {new Date(readings.lastSync.at).toLocaleTimeString()}
+              {readings.lastSync.status === 'success'
+                ? `Synced ${new Date(readings.lastSync.at).toLocaleTimeString()} · ${readings.lastSync.pushed} pushed, ${readings.lastSync.pulled} pulled`
+                : `${readings.lastSync.status} · ${new Date(readings.lastSync.at).toLocaleTimeString()}`}
             </Text>
           )}
         </GlassCard>
@@ -157,8 +163,12 @@ export default function Settings() {
         <PremiumButton label={restoring ? 'Restoring…' : 'Restore Purchases'} onPress={doRestore} variant="ghost" disabled={restoring} />
         <View style={{ height: 8 }} />
         <PremiumButton label={refreshing ? 'Syncing…' : 'Refresh Subscription Status'} onPress={doRefreshSubscription} variant="ghost" disabled={refreshing} />
-        <View style={{ height: 8 }} />
-        <PremiumButton label="Manage Subscription" onPress={openManage} variant="ghost" />
+        {ent.hasMonthly && (
+          <>
+            <View style={{ height: 8 }} />
+            <PremiumButton label="Manage Subscription" onPress={openManage} variant="ghost" />
+          </>
+        )}
         <View style={{ height: 8 }} />
         <PremiumButton label="See Pricing" onPress={() => router.push('/pricing')} variant="subtle" />
       </GlassCard>
@@ -198,23 +208,31 @@ export default function Settings() {
           ?? 'unknown';
         return (
           <GlassCard>
-            <Text style={styles.sectionTitle}>Integrations (dev)</Text>
-            <Row k="Supabase" v={auth.isConfigured ? 'Configured' : 'Not configured (local-first)'} />
-            <Row k="Auth" v={auth.isAuthenticated ? `Signed in (${auth.session?.user.email ?? auth.session?.user.id})` : 'Anonymous'} />
-            <Row k="Cloud sync" v={auth.cloudSyncEnabled ? 'On' : 'Off'} />
-            <Row k="Photo upload" v={auth.photoUploadConsent ? 'On' : 'Off'} />
-            <Row k="RevenueCat" v={ent.isConfigured ? 'Configured (live SDK)' : 'Not configured (mock)'} />
-            <Row k="Monthly entitlement" v={ent.hasMonthly ? 'Active' : 'Inactive'} />
-            <Row k="Reading credits" v={String(ent.readingCredits)} />
-            <Row k="Aura Buddy" v={buddyMode} />
-            <Row k="Last sync" v={ent.lastSyncedAt ? new Date(ent.lastSyncedAt).toLocaleTimeString() : '—'} />
-            <Row k="Build profile" v={`__DEV__=${__DEV__} channel=${channel}`} />
-            <Row k="Customer ID" v={ent.customerId ?? '—'} />
-            <Row k="Active product IDs" v={ent.activeProductIds.join(', ') || '—'} />
-            <Row k="Device ID" v={readings.deviceId} />
-            <Row k="Expo version" v={Constants.expoConfig?.version ?? '—'} />
-            {ent.error && <Row k="Last billing error" v={ent.error} />}
-            {auth.error && <Row k="Last auth error" v={auth.error} />}
+            <PremiumButton
+              label={devOpen ? '▾ Integrations (dev)' : '▸ Integrations (dev)'}
+              onPress={() => setDevOpen((o) => !o)}
+              variant="subtle"
+            />
+            {devOpen && (
+              <View style={{ marginTop: 12 }}>
+                <Row k="Supabase" v={auth.isConfigured ? 'Configured' : 'Not configured (local-first)'} />
+                <Row k="Auth" v={auth.isAuthenticated ? `Signed in (${auth.session?.user.email ?? auth.session?.user.id})` : 'Anonymous'} />
+                <Row k="Cloud sync" v={auth.cloudSyncEnabled ? 'On' : 'Off'} />
+                <Row k="Photo upload" v={auth.photoUploadConsent ? 'On' : 'Off'} />
+                <Row k="RevenueCat" v={ent.isConfigured ? 'Configured (live SDK)' : 'Not configured (mock)'} />
+                <Row k="Monthly entitlement" v={ent.hasMonthly ? 'Active' : 'Inactive'} />
+                <Row k="Reading credits" v={String(ent.readingCredits)} />
+                <Row k="Aura Buddy" v={buddyMode} />
+                <Row k="Last sync" v={ent.lastSyncedAt ? new Date(ent.lastSyncedAt).toLocaleTimeString() : '—'} />
+                <Row k="Build profile" v={`__DEV__=${__DEV__} channel=${channel}`} />
+                <Row k="Customer ID" v={ent.customerId ?? '—'} />
+                <Row k="Active product IDs" v={ent.activeProductIds.join(', ') || '—'} />
+                <Row k="Device ID" v={readings.deviceId} />
+                <Row k="Expo version" v={Constants.expoConfig?.version ?? '—'} />
+                {ent.error && <Row k="Last billing error" v={ent.error} />}
+                {auth.error && <Row k="Last auth error" v={auth.error} />}
+              </View>
+            )}
           </GlassCard>
         );
       })()}

@@ -31,8 +31,8 @@ Outcome marker: `npm run verify:integrations -- --live=production` passes for Su
 ## 2. RevenueCat sandbox → [`revenuecat-sandbox-test.md`](./revenuecat-sandbox-test.md)
 
 What you get:
-- `auralens_instant_reading_099` produces 1 credit in sandbox
-- `auralens_monthly_999` flips `hasMonthly` to true
+- `auralens_instant_reading_199` produces 1 credit in sandbox
+- `auralens_monthly_799` flips `hasMonthly` to true
 - Restore Purchases returns a real subscription
 - Server-side entitlement snapshot updated
 

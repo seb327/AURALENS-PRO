@@ -34,8 +34,8 @@ Every exact string you'll need to paste into an external dashboard during live s
 
 | Product ID | Type | Price | Reference name |
 |---|---|---|---|
-| `auralens_instant_reading_099` | Consumable | £0.99 | Instant Aura Reading |
-| `auralens_monthly_999` | Auto-Renewable Subscription | £9.99/month | AuraLens Monthly |
+| `auralens_instant_reading_199` | Consumable | £1.99 | Instant Aura Reading |
+| `auralens_monthly_799` | Auto-Renewable Subscription | £7.99/month | AuraLens Monthly |
 
 Subscription group: `auralens_main` — duration 1 month.
 
@@ -54,8 +54,8 @@ Subscription group: `auralens_main` — duration 1 month.
 
 | Product ID | Type | Price |
 |---|---|---|
-| `auralens_instant_reading_099` | Managed product · Consumable | £0.99 |
-| `auralens_monthly_999` | Subscription · base plan `monthly` | £9.99/month |
+| `auralens_instant_reading_199` | Managed product · Consumable | £1.99 |
+| `auralens_monthly_799` | Subscription · base plan `monthly` | £7.99/month |
 
 ## RevenueCat
 
@@ -66,8 +66,8 @@ Subscription group: `auralens_main` — duration 1 month.
 | Android package | `com.vybstak.auralens` |
 | Entitlement identifier | `monthly` |
 | Offering identifier | `default` |
-| Package identifier (one-off) | `$rc_lifetime` (or any) — attach `auralens_instant_reading_099` |
-| Package identifier (subscription) | `$rc_monthly` — attach `auralens_monthly_999` |
+| Package identifier (one-off) | `$rc_lifetime` (or any) — attach `auralens_instant_reading_199` |
+| Package identifier (subscription) | `$rc_monthly` — attach `auralens_monthly_799` |
 
 ## Supabase
 
@@ -98,8 +98,8 @@ Take a front-camera scan, or upload three photos from different chapters of
 your life. AuraLens analyses facial landmark geometry, expression balance,
 lighting, and seven symbolic zones to generate a calm, grounded reflection.
 
-— Instant aura reading (£0.99) — one symbolic reading, no tokens, no hidden credits
-— AuraLens Monthly (£9.99/month) — unlimited readings, aura timeline, AI Aura Buddy
+— Instant aura reading (£1.99) — one symbolic reading, no tokens, no hidden credits
+— AuraLens Monthly (£7.99/month) — unlimited readings, aura timeline, AI Aura Buddy
 
 Every reading is for reflection and wellbeing only. AuraLens is not medical,
 psychological, or diagnostic advice.
@@ -108,7 +108,7 @@ psychological, or diagnostic advice.
 ## Subscription and purchase explanation (required in listing + in-app)
 
 ```
-AuraLens Monthly — £9.99/month
+AuraLens Monthly — £7.99/month
 Auto-renews every month until cancelled. Manage or cancel any time in your
 App Store or Google Play account. The instant reading is a one-time
 in-app purchase and is consumed when the reading is generated.

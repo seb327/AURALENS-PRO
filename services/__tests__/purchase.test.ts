@@ -154,7 +154,7 @@ describe('purchaseService', () => {
     }
 
     const price = await purchaseService.getDisplayPrice(PRODUCT_IDS.singleReading);
-    expect(price).toBe('£0.99');
+    expect(price).toBe('£1.99');
   });
 });
 

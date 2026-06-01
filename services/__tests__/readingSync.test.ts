@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { readingSyncService } from '../readingSyncService';
 import { __setSupabaseForTests } from '../supabase';
 import type { SavedReading } from '@/types/reading';
@@ -140,7 +141,7 @@ describe('entitlement sync', () => {
     __setSupabaseForTests(null);
     const r = await entitlementSyncService.sync({
       userId: 'u1', hasMonthly: true, readingCredits: 3,
-      activeProductIds: ['auralens_monthly_999'],
+      activeProductIds: ['auralens_monthly_799'],
       revenueCatCustomerId: 'rc_123',
     });
     expect(r.ok).toBe(false);
@@ -160,7 +161,7 @@ describe('entitlement sync', () => {
     __setSupabaseForTests(sb);
     const r = await entitlementSyncService.sync({
       userId: 'u1', hasMonthly: true, readingCredits: 3,
-      activeProductIds: ['auralens_monthly_999'],
+      activeProductIds: ['auralens_monthly_799'],
       revenueCatCustomerId: 'rc_123',
     });
     expect(r.ok).toBe(true);
