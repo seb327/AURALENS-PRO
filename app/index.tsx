@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Dimensions, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PremiumButton } from '@/components/PremiumButton';
 import {
@@ -16,24 +16,13 @@ const WIDE_BREAKPOINT = 980;
 
 const HERO = {
   eyebrow: 'SYMBOLIC AURA REFLECTION',
-  title: 'Do you carry a calm aura,\nor a heavy one?',
+  titleLine1: 'Do you carry a calm aura,',
+  titleLine2: 'or a heavy one?',
   sub: 'A private symbolic face reading that reflects your visual energy profile in seconds.',
   primaryCta: 'Begin My Reading',
   secondaryCta: 'See How It Works',
   trust: 'For reflection and wellbeing only. Not medical or diagnostic advice.',
 };
-
-// Clamp-style responsive size on web. lineHeight is kept ≥ 1.02 so lines
-// don't collapse onto each other on react-native-web (which treats
-// fractional <1 values as a unitless multiplier).
-const heroTitleStyle = Platform.select({
-  web: {
-    fontSize: 'clamp(44px, 5.8vw, 88px)' as any,
-    lineHeight: 1.02 as any,
-    letterSpacing: -0.04 as any,
-  },
-  default: { fontSize: 56, lineHeight: 62, letterSpacing: -1.2 },
-});
 
 export default function Hero() {
   const [w, setW] = useState(Dimensions.get('window').width);
@@ -64,9 +53,14 @@ export default function Hero() {
         <View style={[styles.left, wide && styles.leftWide]}>
           <FadeUp delay={180}>
             <Eyebrow>{HERO.eyebrow}</Eyebrow>
-            <Text style={[styles.titleBase, heroTitleStyle, styles.titleMargin]}>
-              {HERO.title}
-            </Text>
+            <View style={styles.titleMargin}>
+              <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
+                {HERO.titleLine1}
+              </Text>
+              <Text style={[styles.titleBase, wide ? styles.titleWide : styles.titleNarrow]}>
+                {HERO.titleLine2}
+              </Text>
+            </View>
             <Subtitle style={styles.sub}>{HERO.sub}</Subtitle>
           </FadeUp>
 
@@ -197,6 +191,18 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   titleMargin: { marginTop: 14 },
+  // Each title line is its own <Text> with explicit numeric lineHeight, so
+  // react-native-web doesn't collapse them onto each other on web.
+  titleWide: {
+    fontSize: 80,
+    lineHeight: 86,
+    letterSpacing: -2,
+  },
+  titleNarrow: {
+    fontSize: 52,
+    lineHeight: 58,
+    letterSpacing: -1.2,
+  },
   sub: {
     marginTop: 22,
     maxWidth: 520,
