@@ -185,7 +185,7 @@ export default function Settings() {
         <Text style={styles.sectionTitle}>Privacy</Text>
         <PremiumButton label="Privacy Policy" onPress={() => router.push('/privacy')} variant="ghost" />
         <View style={{ height: 8 }} />
-        <PremiumButton label="Delete My Data" onPress={() => router.push('/delete-data')} variant="ghost" />
+        <PremiumButton label="Delete My Data" onPress={() => router.push('/delete-data')} variant="danger" />
       </GlassCard>
 
       <Text style={styles.foot}>

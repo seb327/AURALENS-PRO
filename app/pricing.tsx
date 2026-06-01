@@ -110,7 +110,7 @@ export default function Pricing() {
         )}
       </GlassCard>
 
-      <GlassCard strong>
+      <GlassCard strong glow>
         <View style={styles.recommendedRow}>
           <Text style={styles.tierTitle}>{copy.pricing.monthly.title}</Text>
           <View style={styles.badge}><Text style={styles.badgeText}>Recommended</Text></View>
@@ -130,9 +130,10 @@ export default function Pricing() {
       </GlassCard>
 
       <PremiumButton
-        label={busy === 'restore' ? 'Restoring…' : 'Restore Purchases'}
+        label="Restore Purchases"
         onPress={doRestore}
         variant="ghost"
+        loading={busy === 'restore'}
         disabled={busy === 'restore'}
       />
 

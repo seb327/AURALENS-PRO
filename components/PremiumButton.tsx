@@ -1,22 +1,38 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { useMemo, useRef } from 'react';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { theme } from '@/constants/theme';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'subtle' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface Props {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'ghost' | 'subtle';
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   disabled?: boolean;
+  loading?: boolean;
+  fullWidth?: boolean;
+  icon?: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
 
-  /** Override the screen-reader label. Defaults to `label` (strips leading symbols like "← "). */
+  /** Override the screen-reader label. Defaults to `label` (strips leading symbols). */
   accessibilityLabel?: string;
-  /** One-sentence hint a screen reader speaks after the label. */
   accessibilityHint?: string;
-  /** Defaults to `button`. Use `link` for back navigation, `imagebutton` for icon-only. */
   accessibilityRole?: 'button' | 'link' | 'imagebutton';
-  /** Test id for integration tests (Appium / Detox / Maestro). */
   testID?: string;
 }
 
@@ -26,19 +42,50 @@ function cleanLabel(raw: string): string {
   return raw.replace(/^[^\p{L}\p{N}]+/u, '').trim() || raw;
 }
 
+const SIZE_PADDING: Record<ButtonSize, { v: number; h: number; font: number }> = {
+  sm: { v: 10, h: 18, font: 13 },
+  md: { v: 14, h: 24, font: 15 },
+  lg: { v: 18, h: 30, font: 16 },
+};
+
 export function PremiumButton({
   label,
   onPress,
   variant = 'primary',
+  size = 'md',
   disabled,
+  loading,
+  fullWidth,
+  icon,
   style,
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole = 'button',
   testID,
 }: Props) {
-  const handle = () => {
-    if (disabled) return;
+  const scale = useRef(new Animated.Value(1)).current;
+  const inactive = disabled || loading;
+
+  // Respect the OS reduced-motion preference.
+  const reduceMotionRef = useRef(false);
+  useMemo(() => {
+    AccessibilityInfo.isReduceMotionEnabled?.()
+      .then((v) => { reduceMotionRef.current = !!v; })
+      .catch(() => {});
+  }, []);
+
+  const animate = (to: number) => {
+    if (reduceMotionRef.current) return;
+    Animated.timing(scale, {
+      toValue: to,
+      duration: theme.motion.press,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  };
+
+  const handlePress = () => {
+    if (inactive) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onPress();
   };
@@ -48,66 +95,158 @@ export function PremiumButton({
     accessibilityLabel: accessibilityLabel ?? cleanLabel(label),
     accessibilityHint,
     accessibilityRole,
-    accessibilityState: { disabled: !!disabled },
+    accessibilityState: { disabled: !!inactive, busy: !!loading },
     testID,
-    // 44×44 minimum hit target (Apple HIG)
     hitSlop: { top: 8, bottom: 8, left: 8, right: 8 } as const,
   };
 
-  // Dynamic-type tolerance: the label text scales with the OS setting but
-  // capped so a luxury button doesn't break the layout at the largest sizes.
-  const maxScale = 1.3;
+  const pad = SIZE_PADDING[size];
+  const widthStyle: ViewStyle = fullWidth ? { alignSelf: 'stretch' } : {};
+  const baseDisabled = inactive ? styles.disabled : null;
 
+  const content = (labelColor: string) => (
+    <View style={styles.row}>
+      {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
+      {loading ? (
+        <ActivityIndicator color={labelColor} size="small" />
+      ) : (
+        <Text
+          style={[styles.labelBase, { color: labelColor, fontSize: pad.font }]}
+          maxFontSizeMultiplier={1.3}
+          allowFontScaling
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      )}
+    </View>
+  );
+
+  // ── PRIMARY ────────────────────────────────────────────────────────────
+  if (variant === 'primary') {
+    return (
+      <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
+        <Pressable
+          onPress={handlePress}
+          onPressIn={() => animate(0.97)}
+          onPressOut={() => animate(1)}
+          disabled={inactive}
+          {...a11y}
+          style={[styles.primaryWrap, theme.shadow.glowGold, baseDisabled]}
+        >
+          <LinearGradient
+            colors={theme.gradients.gold as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.primaryGradient}
+          >
+            <View style={[styles.primaryInner, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}>
+              {content('#1A1305')}
+            </View>
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
+  // ── SECONDARY (frosted glass with border glow) ─────────────────────────
+  if (variant === 'secondary') {
+    return (
+      <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
+        <Pressable
+          onPress={handlePress}
+          onPressIn={() => animate(0.97)}
+          onPressOut={() => animate(1)}
+          disabled={inactive}
+          {...a11y}
+          style={[styles.secondaryWrap, theme.shadow.soft, baseDisabled]}
+        >
+          <LinearGradient
+            colors={theme.gradients.glass as any}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[styles.secondaryFill, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}
+          >
+            {content(theme.colors.softWhite)}
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
+  // ── DANGER ─────────────────────────────────────────────────────────────
+  if (variant === 'danger') {
+    return (
+      <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
+        <Pressable
+          onPress={handlePress}
+          onPressIn={() => animate(0.97)}
+          onPressOut={() => animate(1)}
+          disabled={inactive}
+          {...a11y}
+          style={[styles.dangerWrap, theme.shadow.glowDanger, baseDisabled]}
+        >
+          <View style={[styles.dangerInner, { paddingVertical: pad.v, paddingHorizontal: pad.h }]}>
+            {content(theme.colors.softWhite)}
+          </View>
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
+  // ── GHOST (hairline outlined) ──────────────────────────────────────────
   if (variant === 'ghost') {
     return (
-      <Pressable onPress={handle} disabled={disabled} {...a11y}
-        style={[styles.ghost, disabled && styles.disabled, style]}>
-        <Text style={styles.ghostLabel} maxFontSizeMultiplier={maxScale} allowFontScaling>
-          {label}
-        </Text>
-      </Pressable>
+      <Animated.View style={[{ transform: [{ scale }] }, widthStyle, style]}>
+        <Pressable
+          onPress={handlePress}
+          onPressIn={() => animate(0.97)}
+          onPressOut={() => animate(1)}
+          disabled={inactive}
+          {...a11y}
+          style={[styles.ghost, { paddingVertical: pad.v, paddingHorizontal: pad.h }, baseDisabled]}
+        >
+          {content(theme.colors.softWhite)}
+        </Pressable>
+      </Animated.View>
     );
   }
 
-  if (variant === 'subtle') {
-    return (
-      <Pressable onPress={handle} disabled={disabled} {...a11y}
-        style={[styles.subtle, disabled && styles.disabled, style]}>
-        <Text style={styles.subtleLabel} maxFontSizeMultiplier={maxScale} allowFontScaling>
-          {label}
-        </Text>
-      </Pressable>
-    );
-  }
-
+  // ── SUBTLE (text-only) ─────────────────────────────────────────────────
   return (
-    <Pressable onPress={handle} disabled={disabled} {...a11y}
-      style={[styles.primaryWrap, disabled && styles.disabled, style]}>
-      <LinearGradient
-        colors={['#FBE3A2', '#F4C76B', '#C99645']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.primaryGradient}
-      >
-        <View style={styles.primaryInner}>
-          <Text style={styles.primaryLabel} maxFontSizeMultiplier={maxScale} allowFontScaling>
-            {label}
-          </Text>
-        </View>
-      </LinearGradient>
+    <Pressable
+      onPress={handlePress}
+      disabled={inactive}
+      {...a11y}
+      style={[styles.subtle, { paddingVertical: pad.v, paddingHorizontal: pad.h }, widthStyle, baseDisabled, style]}
+    >
+      {content(theme.colors.mute)}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  labelBase: {
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textAlign: 'center',
+  },
+
+  // PRIMARY
   primaryWrap: {
     borderRadius: theme.radius.pill,
     overflow: 'hidden',
-    shadowColor: theme.colors.auraGold,
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    minHeight: 44, // ensure hit target on small devices
+    minHeight: 48,
   },
   primaryGradient: {
     padding: 1.4,
@@ -116,41 +255,55 @@ const styles = StyleSheet.create({
   primaryInner: {
     backgroundColor: '#1A1305',
     borderRadius: theme.radius.pill,
-    paddingVertical: 16,
-    paddingHorizontal: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryLabel: {
-    color: '#FBE3A2',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.6,
+
+  // SECONDARY (frosted glass)
+  secondaryWrap: {
+    borderRadius: theme.radius.pill,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.hairlineStrong,
+    minHeight: 48,
+    backgroundColor: 'rgba(255,255,255,0.03)',
   },
+  secondaryFill: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // DANGER
+  dangerWrap: {
+    borderRadius: theme.radius.pill,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(229,89,78,0.45)',
+    minHeight: 48,
+    backgroundColor: 'rgba(229,89,78,0.10)',
+  },
+  dangerInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // GHOST
   ghost: {
     borderRadius: theme.radius.pill,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.hairline,
+    backgroundColor: 'rgba(255,255,255,0.015)',
     minHeight: 44,
   },
-  ghostLabel: {
-    color: theme.colors.softWhite,
-    fontSize: 15,
-    letterSpacing: 0.4,
-  },
+
+  // SUBTLE
   subtle: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 44,
   },
-  subtleLabel: {
-    color: theme.colors.mute,
-    fontSize: 14,
-    letterSpacing: 0.4,
-  },
-  disabled: { opacity: 0.4 },
+
+  disabled: { opacity: 0.45 },
 });
