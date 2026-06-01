@@ -136,6 +136,12 @@ export default function Pricing() {
         disabled={busy === 'restore'}
       />
 
+      <PremiumButton
+        label="Have a code? Redeem"
+        onPress={() => router.push('/redeem')}
+        variant="subtle"
+      />
+
       <Text style={styles.foot}>{copy.disclaimers.short}</Text>
     </ScreenContainer>
   );

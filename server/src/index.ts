@@ -41,6 +41,7 @@ import {
   handleStripeWebhook,
   stripeHealth,
 } from './stripe.ts';
+import { handleRedeemCode, redeemHealth } from './redeem.ts';
 
 import { detectCrisis, crisisResponseFor } from '../../supabase/functions/_shared/crisisGuardrail.ts';
 import { checkRateLimit } from '../../supabase/functions/_shared/rateLimit.ts';
@@ -87,13 +88,19 @@ function getEnv(): ProviderEnv & {
 
 // ── Health endpoint ──────────────────────────────────────────────────────────
 
-function envSummary(): { supabase: boolean; provider: string; stripe: ReturnType<typeof stripeHealth> } {
+function envSummary(): {
+  supabase: boolean;
+  provider: string;
+  stripe: ReturnType<typeof stripeHealth>;
+  redeem: ReturnType<typeof redeemHealth>;
+} {
   const env = getEnv();
   const provider = resolveProvider(env).name;
   return {
     supabase: !!env.SUPABASE_URL && !!env.SUPABASE_ANON_KEY,
     provider,
     stripe: stripeHealth(),
+    redeem: redeemHealth(),
   };
 }
 
@@ -285,6 +292,9 @@ app.post('/ai-buddy', handleAiBuddy);
 
 // Stripe checkout
 app.post('/checkout/session', handleCreateCheckout);
+
+// VIP code redemption
+app.post('/redeem', handleRedeemCode);
 
 // ── Web bundle (Expo export) ────────────────────────────────────────────────
 // The Dockerfile's web-build stage drops the bundle at /app/web. In dev (tsx)
