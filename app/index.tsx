@@ -194,14 +194,14 @@ const styles = StyleSheet.create({
   // Each title line is its own <Text> with explicit numeric lineHeight, so
   // react-native-web doesn't collapse them onto each other on web.
   titleWide: {
-    fontSize: 60,
-    lineHeight: 66,
-    letterSpacing: -1.4,
+    fontSize: 52,
+    lineHeight: 58,
+    letterSpacing: -1.2,
   },
   titleNarrow: {
-    fontSize: 44,
-    lineHeight: 50,
-    letterSpacing: -1,
+    fontSize: 40,
+    lineHeight: 46,
+    letterSpacing: -0.8,
   },
   sub: {
     marginTop: 22,
