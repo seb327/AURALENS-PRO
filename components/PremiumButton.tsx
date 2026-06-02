@@ -553,6 +553,9 @@ const AURALENS_STARDUST_CSS_INERT = `
 // Real frosted glass treatment using backdrop-filter so the plasma shader
 // BEHIND the page genuinely shows through and "reflects" off every button.
 // Plus an SVG turbulence/displacement filter for the wet-glass distortion.
+// EXACT match to the user-supplied LiquidButton reference. Dark-mode
+// shadows + #container-glass filter + scale 70 displacement. Variant
+// tints layered on top via CSS variables.
 const AURALENS_LIQUID_CSS = `
 .auralens-liquid {
   -webkit-tap-highlight-color: transparent;
@@ -569,15 +572,17 @@ const AURALENS_LIQUID_CSS = `
   cursor: pointer;
   font: inherit;
   z-index: 1;
+  /* Outer "liquidbuttonVariants" base — scale on hover, transition. */
+  transition: transform 300ms ease;
 }
+.auralens-liquid:hover { transform: scale(1.05); }
+
+/* === EXACT shadow stack from reference (dark mode) ===================== */
 .auralens-liquid__face {
-  /* CSS variables defaulted, overridden per variant */
   --ink: rgba(247, 243, 234, 0.95);
-  --tint: rgba(244, 199, 107, 0.10);
-  --tint-hover: rgba(244, 199, 107, 0.18);
-  --glow: rgba(244, 199, 107, 0.35);
-  --inner-1: rgba(255, 255, 255, 0.30);
-  --inner-2: rgba(255, 255, 255, 0.20);
+  --tint: transparent;
+  --tint-hover: rgba(255, 255, 255, 0.05);
+  --glow: rgba(0, 0, 0, 0.15);
 
   position: relative;
   display: inline-flex;
@@ -592,25 +597,28 @@ const AURALENS_LIQUID_CSS = `
   letter-spacing: 0.2px;
   white-space: nowrap;
   background: var(--tint);
-  backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%);
   isolation: isolate;
-  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              background-color 280ms ease,
-              box-shadow 280ms ease;
+  transition: background-color 280ms ease, box-shadow 280ms ease;
+  /* EXACT reference: 0 0 8px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.08),
+     inset 3px 3px 0.5px -3.5px rgba(255,255,255,0.09),
+     inset -3px -3px 0.5px -3.5px rgba(255,255,255,0.85),
+     inset 1px 1px 1px -0.5px rgba(255,255,255,0.6),
+     inset -1px -1px 1px -0.5px rgba(255,255,255,0.6),
+     inset 0 0 6px 6px rgba(255,255,255,0.12),
+     inset 0 0 2px 2px rgba(255,255,255,0.06),
+     0 0 12px var(--glow); */
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 12px 24px -8px rgba(0, 0, 0, 0.55),
-    0 24px 48px -12px rgba(0, 0, 0, 0.4),
-    inset 3px 3px 0.5px -3px var(--inner-1),
-    inset -3px -3px 0.5px -3px var(--inner-2),
-    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.40),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.30),
-    inset 0 0 6px 6px rgba(255, 255, 255, 0.06),
-    inset 0 0 2px 2px rgba(255, 255, 255, 0.04),
-    0 0 18px var(--glow);
+    0 0 8px rgba(0, 0, 0, 0.03),
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.09),
+    inset -3px -3px 0.5px -3.5px rgba(255, 255, 255, 0.85),
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.60),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.60),
+    inset 0 0 6px 6px rgba(255, 255, 255, 0.12),
+    inset 0 0 2px 2px rgba(255, 255, 255, 0.06),
+    0 0 12px var(--glow);
 }
-/* Inner displacement layer — gives the wet-glass warping */
+/* Inner displacement layer — references the EXACT filter id from spec */
 .auralens-liquid__face::before {
   content: "";
   position: absolute;
@@ -618,8 +626,9 @@ const AURALENS_LIQUID_CSS = `
   border-radius: inherit;
   pointer-events: none;
   z-index: -1;
-  backdrop-filter: url(#auralens-glass-filter);
-  -webkit-backdrop-filter: url(#auralens-glass-filter);
+  overflow: hidden;
+  backdrop-filter: url(#container-glass);
+  -webkit-backdrop-filter: url(#container-glass);
 }
 /* Top specular sheen */
 .auralens-liquid__face::after {
@@ -712,15 +721,17 @@ const AURALENS_LIQUID_CSS = `
 // SVG turbulence + displacement filter, attached once to the DOM. The
 // filter creates the wet-glass warping referenced by backdrop-filter:
 // url(#auralens-glass-filter).
+// EXACT filter from reference: id="container-glass", baseFrequency="0.05 0.05",
+// numOctaves=1, seed=1, displacement scale=70, final blur stdDeviation=4.
 const AURALENS_GLASS_SVG = `
 <svg style="position:fixed;width:0;height:0;pointer-events:none" aria-hidden="true">
   <defs>
-    <filter id="auralens-glass-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
-      <feTurbulence type="fractalNoise" baseFrequency="0.045 0.045" numOctaves="1" seed="4" result="t" />
-      <feGaussianBlur in="t" stdDeviation="2" result="b" />
-      <feDisplacementMap in="SourceGraphic" in2="b" scale="60" xChannelSelector="R" yChannelSelector="B" result="d" />
-      <feGaussianBlur in="d" stdDeviation="2" result="fb" />
-      <feComposite in="fb" in2="fb" operator="over" />
+    <filter id="container-glass" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="1" seed="1" result="turbulence" />
+      <feGaussianBlur in="turbulence" stdDeviation="2" result="blurredNoise" />
+      <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="70" xChannelSelector="R" yChannelSelector="B" result="displaced" />
+      <feGaussianBlur in="displaced" stdDeviation="4" result="finalBlur" />
+      <feComposite in="finalBlur" in2="finalBlur" operator="over" />
     </filter>
   </defs>
 </svg>
