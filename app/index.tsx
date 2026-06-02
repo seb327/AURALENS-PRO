@@ -6,6 +6,7 @@ import { PremiumButton } from '@/components/PremiumButton';
 import { Eyebrow, Subtitle } from '@/components/DisplayText';
 import { HeroScanExperience } from '@/components/HeroScanExperience';
 import { CinematicHomeWeb } from '@/components/CinematicHomeWeb';
+import { AuralensLandingSections } from '@/components/relume/AuralensLandingSections';
 import { APP_DISPLAY_NAME } from '@/constants/copy';
 import { theme } from '@/constants/theme';
 
@@ -149,6 +150,9 @@ function NativeHero() {
         <Text style={styles.footerDot}>·</Text>
         <FooterLink label="Technology" to="/technology" />
       </View>
+
+      {/* Relume-pattern landing sections — web only, native returns null */}
+      <AuralensLandingSections />
     </ScreenContainer>
   );
 }
