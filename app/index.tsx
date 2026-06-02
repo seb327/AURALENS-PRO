@@ -5,6 +5,7 @@ import { ScreenContainer } from '@/components/ScreenContainer';
 import { PremiumButton } from '@/components/PremiumButton';
 import { Eyebrow, Subtitle } from '@/components/DisplayText';
 import { HeroScanExperience } from '@/components/HeroScanExperience';
+import { CinematicHomeWeb } from '@/components/CinematicHomeWeb';
 import { APP_DISPLAY_NAME } from '@/constants/copy';
 import { theme } from '@/constants/theme';
 
@@ -21,6 +22,16 @@ const HERO = {
 };
 
 export default function Hero() {
+  // Web users get the full cinematic scroll-pinned landing experience.
+  // Native (iOS / Android) keeps the structured hero so the existing flow
+  // remains intact for app-store builds.
+  if (Platform.OS === 'web') {
+    return <CinematicHomeWeb />;
+  }
+  return <NativeHero />;
+}
+
+function NativeHero() {
   const [w, setW] = useState(Dimensions.get('window').width);
   useEffect(() => {
     const sub = Dimensions.addEventListener('change', ({ window }) => setW(window.width));
