@@ -22,12 +22,10 @@ const HERO = {
 };
 
 export default function Hero() {
-  // Web users get the full cinematic scroll-pinned landing experience.
-  // Native (iOS / Android) keeps the structured hero so the existing flow
-  // remains intact for app-store builds.
-  if (Platform.OS === 'web') {
-    return <CinematicHomeWeb />;
-  }
+  // NOTE: <CinematicHomeWeb /> exists but is disabled — its ScrollTrigger
+  // pin blocked the rest of the site from scrolling. Restore later by
+  // wrapping it inside a tall outer container so other content sits below.
+  // For now every platform uses the working two-column hero.
   return <NativeHero />;
 }
 
