@@ -20,7 +20,11 @@ const INJECTED_STYLES = `
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: transparent;
+  /* Explicit obsidian so the cinematic hero isn't transparent over a
+     potentially-white body. The WebGL shader canvas is position:fixed
+     above body, so it will still show through any element that opts
+     into backdrop-filter (the liquid glass buttons). */
+  background: #050507;
   color: #F7F3EA;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
