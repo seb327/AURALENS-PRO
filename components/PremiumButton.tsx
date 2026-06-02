@@ -139,11 +139,26 @@ export function PremiumButton({
     );
   };
 
-  // ── WEB · LIQUID GLASS (every variant) ──────────────────────────────────
-  // Real frosted glass with backdrop-filter blur + saturate so the WebGL
-  // shader behind the page genuinely shows through and "reflects" off every
-  // button. SVG turbulence filter adds wet-glass warping.
+  // ── WEB · LIQUID METAL (paper-design shader) ────────────────────────────
+  // Lazy-imported on first render so the shader package doesn't ship in
+  // the initial JS for users who never click anything. Skips on subtle
+  // (text-only) which has no visual chrome.
   if (Platform.OS === 'web' && variant !== 'subtle') {
+    return (
+      <LiquidMetalLazy
+        label={label}
+        onClick={handlePress}
+        disabled={inactive}
+        fullWidth={fullWidth}
+        size={size}
+        style={style as any}
+      />
+    );
+  }
+
+  // (legacy CSS-only liquid glass branch — kept as fallback below but never
+  // reached on web while the metal button mounts cleanly.)
+  if (false && Platform.OS === 'web' && variant !== 'subtle') {
     const variantClass =
       variant === 'primary'   ? 'auralens-liquid--gold'   :
       variant === 'secondary' ? 'auralens-liquid--silver' :
@@ -771,4 +786,38 @@ function AuralensLiquidCSS(): any {
     _liquidInjected = true;
   }
   return null;
+}
+
+// ─── Lazy liquid-metal wrapper ─────────────────────────────────────────────
+// Dynamically imports the @paper-design/shaders-backed button only on web,
+// only on first render. Native and SSR receive a transparent placeholder
+// matching the button's expected footprint until it loads.
+
+import { lazy as ReactLazy, Suspense as ReactSuspense } from 'react';
+const _LiquidMetal = ReactLazy(() =>
+  import('@/components/ui/liquid-metal-button').then((m) => ({ default: m.LiquidMetalButton })),
+);
+
+function LiquidMetalLazy(props: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  size?: ButtonSize;
+  style?: ViewStyle;
+}) {
+  const { label, onClick, disabled, fullWidth, style } = props;
+  return (
+    <View
+      style={[
+        { alignSelf: fullWidth ? 'stretch' : 'flex-start' },
+        disabled && { opacity: 0.45 },
+        style as any,
+      ]}
+    >
+      <ReactSuspense fallback={<View style={{ width: 196, height: 52 }} />}>
+        <_LiquidMetal label={label} onClick={onClick} />
+      </ReactSuspense>
+    </View>
+  );
 }
