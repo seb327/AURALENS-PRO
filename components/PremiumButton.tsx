@@ -572,33 +572,41 @@ const AURALENS_LIQUID_CSS = `
   cursor: pointer;
   font: inherit;
   z-index: 1;
-  /* Outer "liquidbuttonVariants" base — scale on hover, transition. */
+  /* Hard cap so the button never sprawls on desktop. Mobile callers
+     can opt into fullWidth which removes the cap via inline style. */
+  max-width: 320px;
+  isolation: isolate;
   transition: transform 300ms ease;
 }
-.auralens-liquid:hover { transform: scale(1.05); }
+.auralens-liquid:hover { transform: translateY(-1px); }
 
-/* === EXACT shadow stack from reference (dark mode) ===================== */
+/* === Controlled liquid glass face — production sizing ================= */
 .auralens-liquid__face {
   --ink: rgba(247, 243, 234, 0.95);
-  --tint: transparent;
-  --tint-hover: rgba(255, 255, 255, 0.05);
+  --tint: rgba(255, 255, 255, 0.03);
+  --tint-hover: rgba(255, 255, 255, 0.07);
   --glow: rgba(0, 0, 0, 0.15);
 
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   border-radius: 999px;
-  padding: 18px 38px;
+  /* CONTROLLED size — 56px tall default, 32px horizontal padding */
+  min-height: 56px;
+  padding: 14px 32px;
   color: var(--ink);
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 600;
+  font-size: 15px;
   letter-spacing: 0.2px;
   white-space: nowrap;
   background: var(--tint);
   isolation: isolate;
-  transition: background-color 280ms ease, box-shadow 280ms ease;
+  /* HARD CONTAINMENT so SVG filter + pseudo elements stay inside */
+  overflow: hidden;
+  transition: background-color 280ms ease, box-shadow 280ms ease, transform 240ms ease;
   /* EXACT reference: 0 0 8px rgba(0,0,0,0.03), 0 2px 6px rgba(0,0,0,0.08),
      inset 3px 3px 0.5px -3.5px rgba(255,255,255,0.09),
      inset -3px -3px 0.5px -3.5px rgba(255,255,255,0.85),
@@ -702,9 +710,6 @@ const AURALENS_LIQUID_CSS = `
   --tint: rgba(255, 255, 255, 0.03);
   --tint-hover: rgba(255, 255, 255, 0.08);
   --glow: rgba(255, 255, 255, 0.10);
-  --inner-1: rgba(255, 255, 255, 0.18);
-  --inner-2: rgba(255, 255, 255, 0.10);
-  padding: 14px 30px;
 }
 .auralens-liquid--danger .auralens-liquid__face {
   --ink: rgba(255, 220, 215, 0.95);
@@ -713,9 +718,17 @@ const AURALENS_LIQUID_CSS = `
   --glow: rgba(229, 89, 78, 0.45);
 }
 
-/* Sizes */
-.auralens-liquid--sm .auralens-liquid__face { padding: 10px 22px; font-size: 13px; }
-.auralens-liquid--lg .auralens-liquid__face { padding: 20px 42px; font-size: 17px; }
+/* Sizes — production caps so buttons never read as oversized */
+.auralens-liquid--sm .auralens-liquid__face {
+  min-height: 44px; padding: 10px 22px; font-size: 13px;
+}
+.auralens-liquid--lg .auralens-liquid__face {
+  min-height: 62px; padding: 18px 38px; font-size: 16px;
+}
+/* Ghost is quieter so it doesn't read as primary */
+.auralens-liquid--ghost .auralens-liquid__face {
+  min-height: 52px; padding: 12px 26px; font-size: 14px;
+}
 `;
 
 // SVG turbulence + displacement filter, attached once to the DOM. The
@@ -729,8 +742,10 @@ const AURALENS_GLASS_SVG = `
     <filter id="container-glass" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
       <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="1" seed="1" result="turbulence" />
       <feGaussianBlur in="turbulence" stdDeviation="2" result="blurredNoise" />
-      <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="70" xChannelSelector="R" yChannelSelector="B" result="displaced" />
-      <feGaussianBlur in="displaced" stdDeviation="4" result="finalBlur" />
+      <!-- scale was 70 (made buttons look like smoke). Controlled at 18 -->
+      <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="18" xChannelSelector="R" yChannelSelector="B" result="displaced" />
+      <!-- final blur reduced from 4 to 1 so glass distortion is felt, not smeared -->
+      <feGaussianBlur in="displaced" stdDeviation="1" result="finalBlur" />
       <feComposite in="finalBlur" in2="finalBlur" operator="over" />
     </filter>
   </defs>
